@@ -1,0 +1,14 @@
+package com.aidevice.smartfix.dto;
+
+import java.math.BigDecimal;
+
+public class InventoryDtos {
+    public record InventoryItemRequest(
+            String name,
+            String category,
+            Integer quantity,
+            Integer reorderPoint,
+            BigDecimal price,
+            String supplier
+    ) {}
+}

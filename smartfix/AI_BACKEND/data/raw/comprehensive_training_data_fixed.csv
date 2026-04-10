@@ -1,0 +1,145 @@
+device_type,brand,model,symptom_text,diagnosis,components,repair_time,success_rate,technician_level
+laptop,Dell,XPS 13,won't turn on no power black screen,Power supply failure,"Power adapter;Battery;Motherboard",60,90.0,Intermediate
+laptop,Dell,XPS 13,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Beginner
+laptop,Dell,XPS 13,screen cracked broken display,Screen damage,"Display;Touch digitizer",75,95.0,Advanced
+laptop,Dell,XPS 13,slow performance lag freezing,Software issue,"RAM;SSD;Operating system",90,85.0,Intermediate
+laptop,Dell,XPS 13,overheating fan loud hot,Cooling system failure,"Fan;Heat sink;Thermal paste",60,88.0,Intermediate
+laptop,Dell,XPS 13,wifi not connecting no internet,Network failure,"Wifi card;Network drivers",30,92.0,Beginner
+laptop,Dell,XPS 13,keyboard not working some keys,Keyboard failure,"Keyboard;Ribbon cable",45,90.0,Intermediate
+laptop,Dell,XPS 13,no sound speaker audio issue,Audio failure,"Speakers;Audio jack",30,85.0,Beginner
+laptop,Dell,XPS 13,usb ports not working,USB failure,"USB ports;Motherboard",45,87.0,Intermediate
+laptop,Dell,XPS 15,won't turn on no power black screen,Power supply failure,"Power adapter;Battery;Motherboard",60,90.0,Intermediate
+laptop,Dell,XPS 15,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Beginner
+laptop,Dell,XPS 15,screen cracked broken display,Screen damage,"Display;Touch digitizer",75,95.0,Advanced
+laptop,Dell,XPS 15,slow performance lag freezing,Software issue,"RAM;SSD;Operating system",90,85.0,Intermediate
+laptop,Dell,XPS 15,overheating fan loud hot,Cooling system failure,"Fan;Heat sink;Thermal paste",60,88.0,Intermediate
+laptop,Dell,XPS 15,wifi not connecting no internet,Network failure,"Wifi card;Network drivers",30,92.0,Beginner
+laptop,Dell,XPS 15,keyboard not working some keys,Keyboard failure,"Keyboard;Ribbon cable",45,90.0,Intermediate
+laptop,Dell,XPS 15,no sound speaker audio issue,Audio failure,"Speakers;Audio jack",30,85.0,Beginner
+laptop,Dell,XPS 15,usb ports not working,USB failure,"USB ports;Motherboard",45,87.0,Intermediate
+laptop,Dell,Inspiron,won't turn on no power black screen,Power supply failure,"Power adapter;Battery;Motherboard",60,90.0,Intermediate
+laptop,Dell,Inspiron,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Beginner
+laptop,Dell,Inspiron,screen cracked broken display,Screen damage,"Display;Touch digitizer",75,95.0,Advanced
+laptop,Dell,Inspiron,slow performance lag freezing,Software issue,"RAM;SSD;Operating system",90,85.0,Intermediate
+laptop,Dell,Inspiron,overheating fan loud hot,Cooling system failure,"Fan;Heat sink;Thermal paste",60,88.0,Intermediate
+laptop,Dell,Inspiron,wifi not connecting no internet,Network failure,"Wifi card;Network drivers",30,92.0,Beginner
+laptop,Dell,Inspiron,keyboard not working some keys,Keyboard failure,"Keyboard;Ribbon cable",45,90.0,Intermediate
+laptop,Dell,Inspiron,no sound speaker audio issue,Audio failure,"Speakers;Audio jack",30,85.0,Beginner
+laptop,Dell,Inspiron,usb ports not working,USB failure,"USB ports;Motherboard",45,87.0,Intermediate
+laptop,HP,Spectre,won't turn on no power black screen,Power supply failure,"Power adapter;Battery;Motherboard",60,90.0,Intermediate
+laptop,HP,Spectre,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Beginner
+laptop,HP,Spectre,screen cracked broken display,Screen damage,"Display;Touch digitizer",75,95.0,Advanced
+laptop,HP,Spectre,slow performance lag freezing,Software issue,"RAM;SSD;Operating system",90,85.0,Intermediate
+laptop,HP,Spectre,overheating fan loud hot,Cooling system failure,"Fan;Heat sink;Thermal paste",60,88.0,Intermediate
+laptop,HP,Spectre,wifi not connecting no internet,Network failure,"Wifi card;Network drivers",30,92.0,Beginner
+laptop,HP,Spectre,keyboard not working some keys,Keyboard failure,"Keyboard;Ribbon cable",45,90.0,Intermediate
+laptop,HP,Spectre,no sound speaker audio issue,Audio failure,"Speakers;Audio jack",30,85.0,Beginner
+laptop,HP,Spectre,usb ports not working,USB failure,"USB ports;Motherboard",45,87.0,Intermediate
+laptop,HP,Pavilion,won't turn on no power black screen,Power supply failure,"Power adapter;Battery;Motherboard",60,90.0,Intermediate
+laptop,HP,Pavilion,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Beginner
+laptop,HP,Pavilion,screen cracked broken display,Screen damage,"Display;Touch digitizer",75,95.0,Advanced
+laptop,HP,Pavilion,slow performance lag freezing,Software issue,"RAM;SSD;Operating system",90,85.0,Intermediate
+laptop,HP,Pavilion,overheating fan loud hot,Cooling system failure,"Fan;Heat sink;Thermal paste",60,88.0,Intermediate
+laptop,HP,Pavilion,wifi not connecting no internet,Network failure,"Wifi card;Network drivers",30,92.0,Beginner
+laptop,HP,Pavilion,keyboard not working some keys,Keyboard failure,"Keyboard;Ribbon cable",45,90.0,Intermediate
+laptop,HP,Pavilion,no sound speaker audio issue,Audio failure,"Speakers;Audio jack",30,85.0,Beginner
+laptop,HP,Pavilion,usb ports not working,USB failure,"USB ports;Motherboard",45,87.0,Intermediate
+laptop,Lenovo,ThinkPad,won't turn on no power black screen,Power supply failure,"Power adapter;Battery;Motherboard",60,90.0,Intermediate
+laptop,Lenovo,ThinkPad,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Beginner
+laptop,Lenovo,ThinkPad,screen cracked broken display,Screen damage,"Display;Touch digitizer",75,95.0,Advanced
+laptop,Lenovo,ThinkPad,slow performance lag freezing,Software issue,"RAM;SSD;Operating system",90,85.0,Intermediate
+laptop,Lenovo,ThinkPad,overheating fan loud hot,Cooling system failure,"Fan;Heat sink;Thermal paste",60,88.0,Intermediate
+laptop,Lenovo,ThinkPad,wifi not connecting no internet,Network failure,"Wifi card;Network drivers",30,92.0,Beginner
+laptop,Lenovo,ThinkPad,keyboard not working some keys,Keyboard failure,"Keyboard;Ribbon cable",45,90.0,Intermediate
+laptop,Lenovo,ThinkPad,no sound speaker audio issue,Audio failure,"Speakers;Audio jack",30,85.0,Beginner
+laptop,Lenovo,ThinkPad,usb ports not working,USB failure,"USB ports;Motherboard",45,87.0,Intermediate
+laptop,Apple,MacBook Air,won't turn on no power black screen,Power supply failure,"Power adapter;Battery;Logic board",75,85.0,Advanced
+laptop,Apple,MacBook Air,dead battery not charging,Battery failure,"Battery;Charging port",60,95.0,Intermediate
+laptop,Apple,MacBook Air,screen cracked broken display,Screen damage,"Display;Assembly",90,90.0,Expert
+laptop,Apple,MacBook Air,slow performance lag freezing,Software issue,"SSD;RAM;macOS",60,80.0,Intermediate
+laptop,Apple,MacBook Air,overheating fan loud hot,Cooling system failure,"Fan;Heat sink;Thermal paste",75,85.0,Advanced
+laptop,Apple,MacBook Air,wifi not connecting no internet,Network failure,"Wifi card;AirPort card",45,88.0,Intermediate
+laptop,Apple,MacBook Air,keyboard not working some keys,Keyboard failure,"Keyboard;Butterfly mechanism",90,75.0,Expert
+laptop,Apple,MacBook Air,no sound speaker audio issue,Audio failure,"Speakers;Audio board",45,82.0,Intermediate
+laptop,Apple,MacBook Air,usb ports not working,USB failure,"USB ports;Logic board",60,85.0,Advanced
+laptop,Apple,MacBook Pro,won't turn on no power black screen,Power supply failure,"Power adapter;Battery;Logic board",75,85.0,Advanced
+laptop,Apple,MacBook Pro,dead battery not charging,Battery failure,"Battery;Charging port",60,95.0,Intermediate
+laptop,Apple,MacBook Pro,screen cracked broken display,Screen damage,"Display;Assembly",90,90.0,Expert
+laptop,Apple,MacBook Pro,slow performance lag freezing,Software issue,"SSD;RAM;macOS",60,80.0,Intermediate
+laptop,Apple,MacBook Pro,overheating fan loud hot,Cooling system failure,"Fan;Heat sink;Thermal paste",75,85.0,Advanced
+laptop,Apple,MacBook Pro,wifi not connecting no internet,Network failure,"Wifi card;AirPort card",45,88.0,Intermediate
+laptop,Apple,MacBook Pro,keyboard not working some keys,Keyboard failure,"Keyboard;Butterfly mechanism",90,75.0,Expert
+laptop,Apple,MacBook Pro,no sound speaker audio issue,Audio failure,"Speakers;Audio board",45,82.0,Intermediate
+laptop,Apple,MacBook Pro,usb ports not working,USB failure,"USB ports;Logic board",60,85.0,Advanced
+smartphone,Apple,iPhone 11,won't turn on no power black screen,Power supply failure,"Battery;Charging port;Logic board",60,85.0,Advanced
+smartphone,Apple,iPhone 11,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Intermediate
+smartphone,Apple,iPhone 11,screen cracked broken display,Screen damage,"Display;Touch screen",90,90.0,Expert
+smartphone,Apple,iPhone 11,slow performance lag freezing,Software issue,"Processor;RAM;iOS",60,80.0,Intermediate
+smartphone,Apple,iPhone 11,overheating fan loud hot,Cooling system failure,"Battery;Processor;Thermal sensor",75,85.0,Advanced
+smartphone,Apple,iPhone 11,wifi not connecting no internet,Network failure,"Wifi chip;Antenna",30,88.0,Intermediate
+smartphone,Apple,iPhone 11,touch screen not working,Touch failure,"Digitizer;Software",45,82.0,Intermediate
+smartphone,Apple,iPhone 11,no sound speaker audio issue,Audio failure,"Speakers;Microphone",30,85.0,Beginner
+smartphone,Apple,iPhone 11,camera not working,Camera failure,"Camera module;Lens;Software",45,87.0,Intermediate
+smartphone,Apple,iPhone 12,won't turn on no power black screen,Power supply failure,"Battery;Charging port;Logic board",60,85.0,Advanced
+smartphone,Apple,iPhone 12,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Intermediate
+smartphone,Apple,iPhone 12,screen cracked broken display,Screen damage,"Display;Touch screen",90,90.0,Expert
+smartphone,Apple,iPhone 12,slow performance lag freezing,Software issue,"Processor;RAM;iOS",60,80.0,Intermediate
+smartphone,Apple,iPhone 12,overheating fan loud hot,Cooling system failure,"Battery;Processor;Thermal sensor",75,85.0,Advanced
+smartphone,Apple,iPhone 12,wifi not connecting no internet,Network failure,"Wifi chip;Antenna",30,88.0,Intermediate
+smartphone,Apple,iPhone 12,touch screen not working,Touch failure,"Digitizer;Software",45,82.0,Intermediate
+smartphone,Apple,iPhone 12,no sound speaker audio issue,Audio failure,"Speakers;Microphone",30,85.0,Beginner
+smartphone,Apple,iPhone 12,camera not working,Camera failure,"Camera module;Lens;Software",45,87.0,Intermediate
+smartphone,Apple,iPhone 14,won't turn on no power black screen,Power supply failure,"Battery;Charging port;Logic board",60,85.0,Advanced
+smartphone,Apple,iPhone 14,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Intermediate
+smartphone,Apple,iPhone 14,screen cracked broken display,Screen damage,"Display;Touch screen",90,90.0,Expert
+smartphone,Apple,iPhone 14,slow performance lag freezing,Software issue,"Processor;RAM;iOS",60,80.0,Intermediate
+smartphone,Apple,iPhone 14,overheating fan loud hot,Cooling system failure,"Battery;Processor;Thermal sensor",75,85.0,Advanced
+smartphone,Apple,iPhone 14,wifi not connecting no internet,Network failure,"Wifi chip;Antenna",30,88.0,Intermediate
+smartphone,Apple,iPhone 14,touch screen not working,Touch failure,"Digitizer;Software",45,82.0,Intermediate
+smartphone,Apple,iPhone 14,no sound speaker audio issue,Audio failure,"Speakers;Microphone",30,85.0,Beginner
+smartphone,Apple,iPhone 14,camera not working,Camera failure,"Camera module;Lens;Software",45,87.0,Intermediate
+smartphone,Samsung,Galaxy S21,won't turn on no power black screen,Power supply failure,"Battery;Charging port;Logic board",60,85.0,Advanced
+smartphone,Samsung,Galaxy S21,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Intermediate
+smartphone,Samsung,Galaxy S21,screen cracked broken display,Screen damage,"Display;Touch screen",90,90.0,Expert
+smartphone,Samsung,Galaxy S21,slow performance lag freezing,Software issue,"Processor;RAM;Android",60,80.0,Intermediate
+smartphone,Samsung,Galaxy S21,overheating fan loud hot,Cooling system failure,"Battery;Processor;Thermal sensor",75,85.0,Advanced
+smartphone,Samsung,Galaxy S21,wifi not connecting no internet,Network failure,"Wifi chip;Antenna",30,88.0,Intermediate
+smartphone,Samsung,Galaxy S21,touch screen not working,Touch failure,"Digitizer;Software",45,82.0,Intermediate
+smartphone,Samsung,Galaxy S21,no sound speaker audio issue,Audio failure,"Speakers;Microphone",30,85.0,Beginner
+smartphone,Samsung,Galaxy S21,camera not working,Camera failure,"Camera module;Lens;Software",45,87.0,Intermediate
+smartphone,Samsung,Galaxy S22,won't turn on no power black screen,Power supply failure,"Battery;Charging port;Logic board",60,85.0,Advanced
+smartphone,Samsung,Galaxy S22,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Intermediate
+smartphone,Samsung,Galaxy S22,screen cracked broken display,Screen damage,"Display;Touch screen",90,90.0,Expert
+smartphone,Samsung,Galaxy S22,slow performance lag freezing,Software issue,"Processor;RAM;Android",60,80.0,Intermediate
+smartphone,Samsung,Galaxy S22,overheating fan loud hot,Cooling system failure,"Battery;Processor;Thermal sensor",75,85.0,Advanced
+smartphone,Samsung,Galaxy S22,wifi not connecting no internet,Network failure,"Wifi chip;Antenna",30,88.0,Intermediate
+smartphone,Samsung,Galaxy S22,touch screen not working,Touch failure,"Digitizer;Software",45,82.0,Intermediate
+smartphone,Samsung,Galaxy S22,no sound speaker audio issue,Audio failure,"Speakers;Microphone",30,85.0,Beginner
+smartphone,Samsung,Galaxy S22,camera not working,Camera failure,"Camera module;Lens;Software",45,87.0,Intermediate
+tablet,Apple,iPad Air,won't turn on no power black screen,Power supply failure,"Battery;Charging port;Logic board",60,85.0,Advanced
+tablet,Apple,iPad Air,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Intermediate
+tablet,Apple,iPad Air,screen cracked broken display,Screen damage,"Display;Touch screen",90,90.0,Expert
+tablet,Apple,iPad Air,slow performance lag freezing,Software issue,"Processor;RAM;iPadOS",60,80.0,Intermediate
+tablet,Apple,iPad Air,overheating fan loud hot,Cooling system failure,"Battery;Processor;Thermal sensor",75,85.0,Advanced
+tablet,Apple,iPad Air,wifi not connecting no internet,Network failure,"Wifi chip;Antenna",30,88.0,Intermediate
+tablet,Apple,iPad Air,touch screen not working,Touch failure,"Digitizer;Software",45,82.0,Intermediate
+tablet,Apple,iPad Air,no sound speaker audio issue,Audio failure,"Speakers;Microphone",30,85.0,Beginner
+tablet,Apple,iPad Air,camera not working,Camera failure,"Camera module;Lens;Software",45,87.0,Intermediate
+tablet,Samsung,Galaxy Tab S8,won't turn on no power black screen,Power supply failure,"Battery;Charging port;Logic board",60,85.0,Advanced
+tablet,Samsung,Galaxy Tab S8,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Intermediate
+tablet,Samsung,Galaxy Tab S8,screen cracked broken display,Screen damage,"Display;Touch screen",90,90.0,Expert
+tablet,Samsung,Galaxy Tab S8,slow performance lag freezing,Software issue,"Processor;RAM;Android",60,80.0,Intermediate
+tablet,Samsung,Galaxy Tab S8,overheating fan loud hot,Cooling system failure,"Battery;Processor;Thermal sensor",75,85.0,Advanced
+tablet,Samsung,Galaxy Tab S8,wifi not connecting no internet,Network failure,"Wifi chip;Antenna",30,88.0,Intermediate
+tablet,Samsung,Galaxy Tab S8,touch screen not working,Touch failure,"Digitizer;Software",45,82.0,Intermediate
+tablet,Samsung,Galaxy Tab S8,no sound speaker audio issue,Audio failure,"Speakers;Microphone",30,85.0,Beginner
+tablet,Samsung,Galaxy Tab S8,camera not working,Camera failure,"Camera module;Lens;Software",45,87.0,Intermediate
+tablet,Samsung,Galaxy Tab A9,won't turn on no power black screen,Power supply failure,"Battery;Charging port;Logic board",60,85.0,Advanced
+tablet,Samsung,Galaxy Tab A9,dead battery not charging,Battery failure,"Battery;Charging port",45,95.0,Intermediate
+tablet,Samsung,Galaxy Tab A9,screen cracked broken display,Screen damage,"Display;Touch screen",90,90.0,Expert
+tablet,Samsung,Galaxy Tab A9,slow performance lag freezing,Software issue,"Processor;RAM;Android",60,80.0,Intermediate
+tablet,Samsung,Galaxy Tab A9,overheating fan loud hot,Cooling system failure,"Battery;Processor;Thermal sensor",75,85.0,Advanced
+tablet,Samsung,Galaxy Tab A9,wifi not connecting no internet,Network failure,"Wifi chip;Antenna",30,88.0,Intermediate
+tablet,Samsung,Galaxy Tab A9,touch screen not working,Touch failure,"Digitizer;Software",45,82.0,Intermediate
+tablet,Samsung,Galaxy Tab A9,no sound speaker audio issue,Audio failure,"Speakers;Microphone",30,85.0,Beginner
+tablet,Samsung,Galaxy Tab A9,camera not working,Camera failure,"Camera module;Lens;Software",45,87.0,Intermediate
