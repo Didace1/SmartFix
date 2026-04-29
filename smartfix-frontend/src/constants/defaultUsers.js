@@ -28,27 +28,14 @@ export const DEFAULT_USERS = [
     avatar: 'https://ui-avatars.com/api/?name=Sarah+Tech&background=10b981&color=fff'
   },
   {
-    id: 3,
-    email: 'manager@smartfix.com',
-    password: 'manager123',
-    fullName: 'Mike Manager',
-    role: 'manager',
-    employeeId: 'MGR001',
-    phone: '+1234567892',
-    specialization: 'Operations Management',
-    permissions: ['dashboard', 'inventory-view', 'sales-view', 'reporting', 'technicians-view'],
-    mfaEnabled: false,
-    avatar: 'https://ui-avatars.com/api/?name=Mike+Mgr&background=f59e0b&color=fff'
-  },
-  {
     id: 4,
     email: 'inventory@smartfix.com',
     password: 'inv123',
-    fullName: 'Lisa Inventory',
+    fullName: 'Lisa Inventor',
     role: 'inventory',
     employeeId: 'INV001',
     phone: '+1234567893',
-    specialization: 'Inventory Management',
+    specialization: 'Stock Management',
     permissions: ['inventory', 'inventory-manage', 'suppliers', 'purchase-orders'],
     mfaEnabled: false,
     avatar: 'https://ui-avatars.com/api/?name=Lisa+Inv&background=8b5cf6&color=fff'
@@ -80,13 +67,8 @@ export const ROLE_DASHBOARD_CONFIG = {
     widgets: ['myTasks', 'pendingRepairs', 'diagnosis', 'componentHealth'],
     actions: ['newDiagnosis', 'viewRepairs', 'updateStatus']
   },
-  manager: {
-    welcomeMessage: 'Operations Manager',
-    widgets: ['summary', 'performance', 'technicianWorkload', 'revenue'],
-    actions: ['viewReports', 'manageTeam', 'viewAnalytics']
-  },
   inventory: {
-    welcomeMessage: 'Inventory Manager',
+    welcomeMessage: 'Inventor',
     widgets: ['stockLevels', 'lowStock', 'reorderPoints', 'inventoryValue'],
     actions: ['addStock', 'createPurchaseOrder', 'manageSuppliers']
   },
@@ -119,16 +101,6 @@ export const ROLE_DASHBOARD_STATS = {
     nextTask: "Dell XPS Battery Replacement",
     urgentTasks: 1,
     weeklyCompleted: 12
-  },
-  manager: {
-    pendingRepairs: 23,
-    inventoryAlerts: 5,
-    salesToday: 1250,
-    revenueToday: 980,
-    technicianUtilization: 78,
-    monthlyRevenue: 28500,
-    customerSatisfaction: 4.2,
-    costReduction: 12
   },
   inventory: {
     lowStockItems: 5,

@@ -20,11 +20,22 @@ public class RepairTask {
     private String customerPhone;
     private String customerRef;
 
+    @ManyToOne
+    @JoinColumn(name = "device_id")
+    private Device device;
+
+    @ManyToOne
+    @JoinColumn(name = "diagnosis_id")
+    private Diagnosis diagnosis;
+
     private String deviceType;
     private String deviceModel;
 
     @Column(columnDefinition = "TEXT")
     private String repairNote;
+
+    @Column(columnDefinition = "TEXT")
+    private String escalationNote;
 
     @ManyToOne
     @JoinColumn(name = "technician_id")

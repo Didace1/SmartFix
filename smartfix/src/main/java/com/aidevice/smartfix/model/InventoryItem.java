@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inventory_items")
@@ -30,9 +31,26 @@ public class InventoryItem {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(nullable = false)
+    // Purchase cost per unit (kept hidden from sales UI)
+    @Column(precision = 10, scale = 2)
+    private BigDecimal purchaseCost;
+
+    @Column
     private String supplier;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String sku;
+
+    @Column
+    private LocalDateTime createdAt;
+
+    @Column
+    private LocalDateTime lastStockedAt;
+
+    @PrePersist
+    void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (lastStockedAt == null) lastStockedAt = LocalDateTime.now();
+        if (purchaseCost == null) purchaseCost = BigDecimal.ZERO;
+    }
 }

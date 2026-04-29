@@ -17,11 +17,11 @@ public class DataSeeder {
     @Bean
     CommandLineRunner seedUsers(UserRepository userRepository, PasswordEncoder passwordEncoder, InventoryItemRepository inventoryItemRepository) {
         return args -> {
-            seedUser(userRepository, passwordEncoder, "John Administrator", "admin@smartfix.com", "admin123", "admin", "ADMIN001");
-            seedUser(userRepository, passwordEncoder, "Sarah Technician", "technician@smartfix.com", "tech123", "technician", "TECH001");
-            seedUser(userRepository, passwordEncoder, "Mike Manager", "manager@smartfix.com", "manager123", "manager", "MGR001");
-            seedUser(userRepository, passwordEncoder, "Lisa Inventory", "inventory@smartfix.com", "inv123", "inventory", "INV001");
-            seedUser(userRepository, passwordEncoder, "David Sales", "sales@smartfix.com", "sales123", "sales", "SALES001");
+            seedUser(userRepository, passwordEncoder, "John Administrator", "admin@corexltd.com", "admin123", "admin", "ADMIN001");
+            seedUser(userRepository, passwordEncoder, "Sarah Technician", "technician@corexltd.com", "tech123", "technician", "TECH001");
+            seedUser(userRepository, passwordEncoder, "Mike Manager", "manager@corexltd.com", "manager123", "manager", "MGR001");
+            seedUser(userRepository, passwordEncoder, "Lisa Inventory", "inventory@corexltd.com", "inv123", "inventory", "INV001");
+            seedUser(userRepository, passwordEncoder, "David Sales", "sales@corexltd.com", "sales123", "sales", "SALES001");
             seedInventory(inventoryItemRepository);
         };
     }
@@ -37,6 +37,7 @@ public class DataSeeder {
         user.setPhone("");
         user.setSpecialization("");
         user.setCertifications("");
+        user.setApproved(true);
         repo.save(user);
     }
 

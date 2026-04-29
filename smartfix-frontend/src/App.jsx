@@ -11,16 +11,23 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { FaultDiagnosisPage } from './features/fault-diagnosis/FaultDiagnosisPage';
 import { FailurePredictionPage } from './features/failure-prediction/FailurePredictionPage';
 import { InventoryPage } from './features/inventory/InventoryPage';
+import { StockAlertsPage } from './features/inventory/StockAlertsPage';
+import { StockViewPage } from './features/inventory/StockViewPage';
 import { SalesPage } from './features/sales/SalesPage';
 import { SalesRepairPage } from './features/sales/SalesRepairPage';
 import { RepairGuidePage } from './features/repair/RepairGuidePage';
 import { CustomersPage } from './features/customers/CustomersPage';
 import { TechniciansPage } from './features/technicians/TechniciansPage';
 import { ReportsPage } from './features/reports/ReportsPage';
+import { NotificationsPage } from './features/notifications/NotificationsPage';
 import { SparePartRequestPage } from './features/spare-parts/SparePartRequestPage';
 import { RepairTasksPage } from './features/repair-tasks/RepairTasksPage';
 import { RoleBasedNavbar } from './shared/components/Navigation/RoleBasedNavbar';
 import { RoleBasedRoute } from './routes/RoleBasedRoute';
+import { TermsPage } from './features/legal/TermsPage';
+import { PrivacyPolicyPage } from './features/legal/PrivacyPolicyPage';
+import { PendingUsersPage } from './features/admin/PendingUsersPage';
+import { CategoryManagementPage } from './features/admin/CategoryManagementPage';
 
 const AppLayout = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -34,13 +41,25 @@ const AppLayout = () => {
         <Route path="/register" element={<RegistrationForm />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/admin/pending-users" element={
+          <RoleBasedRoute allowedRoles={['admin']}>
+            <PendingUsersPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="/admin/categories" element={
+          <RoleBasedRoute allowedRoles={['admin']}>
+            <CategoryManagementPage />
+          </RoleBasedRoute>
+        } />
         
         {/* Protected Routes - Redirect to dashboard if authenticated */}
         <Route path="/" element={<Navigate to="/dashboard" />} />
         
         {/* Dashboard - Accessible by all roles */}
         <Route path="/dashboard" element={
-          <RoleBasedRoute allowedRoles={['admin', 'technician', 'manager', 'inventory', 'sales']}>
+          <RoleBasedRoute allowedRoles={['admin', 'technician', 'inventory', 'sales']}>
             <DashboardPage />
           </RoleBasedRoute>
         } />
@@ -52,16 +71,16 @@ const AppLayout = () => {
           </RoleBasedRoute>
         } />
         
-        {/* Failure Prediction - Admin and manager */}
+        {/* Failure Prediction - Admin only */}
         <Route path="/failure-prediction" element={
-          <RoleBasedRoute allowedRoles={['admin', 'manager']}>
+          <RoleBasedRoute allowedRoles={['admin']}>
             <FailurePredictionPage />
           </RoleBasedRoute>
         } />
 
-        {/* Spare Part Requests - Admin and technician */}
+        {/* Spare Part Requests - Admin only */}
         <Route path="/spare-part-requests" element={
-          <RoleBasedRoute allowedRoles={['admin', 'technician']}>
+          <RoleBasedRoute allowedRoles={['admin']}>
             <SparePartRequestPage />
           </RoleBasedRoute>
         } />
@@ -75,8 +94,18 @@ const AppLayout = () => {
         
         {/* Inventory - Admin, manager, inventory */}
         <Route path="/inventory" element={
-          <RoleBasedRoute allowedRoles={['admin', 'manager', 'inventory']}>
+          <RoleBasedRoute allowedRoles={['admin', 'inventory']}>
             <InventoryPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="/inventory/stock-alerts" element={
+          <RoleBasedRoute allowedRoles={['admin', 'inventory']}>
+            <StockAlertsPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="/inventory/view" element={
+          <RoleBasedRoute allowedRoles={['admin', 'inventory']}>
+            <StockViewPage />
           </RoleBasedRoute>
         } />
         
@@ -107,17 +136,24 @@ const AppLayout = () => {
           </RoleBasedRoute>
         } />
 
-        {/* Technicians - Admin and manager */}
+        {/* Technicians - Admin only */}
         <Route path="/technicians" element={
-          <RoleBasedRoute allowedRoles={['admin', 'manager']}>
+          <RoleBasedRoute allowedRoles={['admin']}>
             <TechniciansPage />
           </RoleBasedRoute>
         } />
 
-        {/* Reports - Admin and manager */}
+        {/* Reports - Admin only */}
         <Route path="/reports" element={
-          <RoleBasedRoute allowedRoles={['admin', 'manager']}>
+          <RoleBasedRoute allowedRoles={['admin']}>
             <ReportsPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Notifications - Admin, sales, inventory */}
+        <Route path="/notifications" element={
+          <RoleBasedRoute allowedRoles={['admin', 'sales', 'inventory']}>
+            <NotificationsPage />
           </RoleBasedRoute>
         } />
       </Routes>

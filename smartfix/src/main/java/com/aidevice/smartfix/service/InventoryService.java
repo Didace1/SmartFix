@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.math.BigDecimal;
 
 @Service
 public class InventoryService {
@@ -28,8 +31,21 @@ public class InventoryService {
         item.setQuantity(request.quantity() == null ? 0 : request.quantity());
         item.setReorderPoint(request.reorderPoint() == null ? 10 : request.reorderPoint());
         item.setPrice(request.price());
-        item.setSupplier(request.supplier());
+        item.setPurchaseCost(request.purchaseCost() == null ? BigDecimal.ZERO : request.purchaseCost());
+        // UI no longer collects supplier; store empty string if null
+        item.setSupplier(request.supplier() == null ? "" : request.supplier());
         item.setSku(generateSku(request.category()));
+        // Allow explicitly provided stock entry date (date-only string)
+        if (request.lastStockedAt() != null && !request.lastStockedAt().isBlank()) {
+            try {
+                LocalDate date = LocalDate.parse(request.lastStockedAt());
+                item.setLastStockedAt(date.atStartOfDay());
+            } catch (Exception e) {
+                item.setLastStockedAt(LocalDateTime.now());
+            }
+        } else {
+            item.setLastStockedAt(LocalDateTime.now());
+        }
         return inventoryRepository.save(item);
     }
 
@@ -37,12 +53,28 @@ public class InventoryService {
     public InventoryItem update(Long id, InventoryDtos.InventoryItemRequest request) {
         InventoryItem item = inventoryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Inventory item not found"));
+        int oldQuantity = item.getQuantity() == null ? 0 : item.getQuantity();
         item.setName(request.name());
         item.setCategory(request.category());
         item.setQuantity(request.quantity());
         item.setReorderPoint(request.reorderPoint());
         item.setPrice(request.price());
-        item.setSupplier(request.supplier());
+        item.setPurchaseCost(request.purchaseCost() == null ? item.getPurchaseCost() : request.purchaseCost());
+        // Supplier is optional now
+        if (request.supplier() != null) {
+            item.setSupplier(request.supplier());
+        }
+        // Update lastStockedAt when an explicit date is provided or when quantity increased
+        if (request.lastStockedAt() != null && !request.lastStockedAt().isBlank()) {
+            try {
+                LocalDate date = LocalDate.parse(request.lastStockedAt());
+                item.setLastStockedAt(date.atStartOfDay());
+            } catch (Exception e) {
+                item.setLastStockedAt(LocalDateTime.now());
+            }
+        } else if (request.quantity() != null && request.quantity() > oldQuantity) {
+            item.setLastStockedAt(LocalDateTime.now());
+        }
         return inventoryRepository.save(item);
     }
 

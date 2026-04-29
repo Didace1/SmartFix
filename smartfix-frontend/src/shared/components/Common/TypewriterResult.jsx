@@ -15,37 +15,29 @@ export const TypewriterResult = ({
   useEffect(() => {
     const safeText = text === null || text === undefined ? '' : String(text);
 
-    // Increment run id to invalidate any in-flight timers
+    // Cancel any in-flight typing from the previous run
     runIdRef.current += 1;
     const runId = runIdRef.current;
-
-    // Clear any existing timers
     timeoutsRef.current.forEach((t) => clearTimeout(t));
     timeoutsRef.current = [];
-
-    if (!safeText) {
-      setDisplayedText('');
-      setIsComplete(false);
-      return;
-    }
 
     setDisplayedText('');
     setIsComplete(false);
 
-    const currentIndex = safeText.length;
+    if (!safeText) return;
+
     let charIndex = 0;
 
     const typeNextChar = () => {
       if (runIdRef.current !== runId) return;
-      if (charIndex < currentIndex) {
-        setDisplayedText((prev) => prev + safeText[charIndex]);
-        charIndex++;
-        
-        if (charIndex >= currentIndex) {
+      if (charIndex < safeText.length) {
+        // Capture char before incrementing so the correct character is added
+        const char = safeText[charIndex];
+        charIndex += 1;
+        setDisplayedText((prev) => prev + char);
+        if (charIndex >= safeText.length) {
           setIsComplete(true);
-          if (onComplete) {
-            onComplete();
-          }
+          if (onComplete) onComplete();
         } else {
           const t = setTimeout(typeNextChar, 1000 / speed);
           timeoutsRef.current.push(t);
@@ -53,27 +45,23 @@ export const TypewriterResult = ({
       }
     };
 
-    // Start typing after base delay + optional external delay
     const startDelay = 300 + (Number.isFinite(delay) ? delay : 0);
     const startT = setTimeout(typeNextChar, startDelay);
     timeoutsRef.current.push(startT);
 
     return () => {
-      // Cleanup timers on unmount / prop change
+      runIdRef.current += 1; // invalidate this run's callbacks on cleanup
       timeoutsRef.current.forEach((t) => clearTimeout(t));
       timeoutsRef.current = [];
     };
 
-  }, [text, speed]);
+  }, [text, speed, delay]);
 
   return (
     <div className={className}>
       {displayedText}
-      {!isComplete && (
-        <span 
-          className="inline-block w-2 h-4 bg-blue-500 ml-1 animate-pulse"
-          style={{ animation: 'pulse 1s infinite' }}
-        ></span>
+      {!isComplete && displayedText.length > 0 && (
+        <span className="inline-block w-2 h-4 bg-blue-500 ml-1 animate-pulse"></span>
       )}
     </div>
   );

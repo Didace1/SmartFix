@@ -12,6 +12,14 @@ public class AuthDtos {
             String certifications
     ) {}
 
+    public record PendingUserResponse(
+            Long id,
+            String fullName,
+            String email,
+            String phone,
+            String role
+    ) {}
+
     public record LoginRequest(
             String email,
             String password,
@@ -26,12 +34,19 @@ public class AuthDtos {
             String employeeId,
             String role,
             String specialization,
-            String certifications
+            String certifications,
+            boolean approved
+    ) {}
+
+    public record OtpVerifyRequest(
+            String email,
+            String otp
     ) {}
 
     public record AuthResponse(
             String token,
             Boolean requiresMfa,
-            UserResponse user
+            UserResponse user,
+            String devOtp
     ) {}
 }

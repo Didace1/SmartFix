@@ -1,9 +1,27 @@
 // src/features/fault-diagnosis/components/SymptomInput.jsx
 import React, { useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 
-export const SymptomInput = ({ onSubmit }) => {
+const looksLikeGibberish = (text) => {
+  if (!text || text.trim().length < 5) return false;
+  const t = text.trim();
+  if (/^(.)\1{4,}$/.test(t)) return true;
+  const clean = t.replace(/\s/g, '').toLowerCase();
+  const uniqueChars = new Set(clean.split(''));
+  if (uniqueChars.size < 3 && clean.length > 8) return true;
+  const words = t.split(/\s+/);
+  if (words.length > 3) {
+    const uniqueWords = new Set(words.map(w => w.toLowerCase())).size;
+    if (uniqueWords < 2) return true;
+  }
+  if (clean.length > 10 && !/[aeiou]/i.test(clean)) return true;
+  return false;
+};
+
+export const SymptomInput = ({ onSubmit, serverError }) => {
   const [symptomText, setSymptomText] = useState('');
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
+  const [localError, setLocalError] = useState('');
 
   const commonSymptoms = {
     'No Power': 'Device does not turn on or respond to power button',
@@ -17,6 +35,7 @@ export const SymptomInput = ({ onSubmit }) => {
   };
 
   const handleSymptomToggle = (symptom) => {
+    setLocalError('');
     if (selectedSymptoms.includes(symptom)) {
       setSelectedSymptoms(selectedSymptoms.filter(s => s !== symptom));
     } else {
@@ -26,20 +45,25 @@ export const SymptomInput = ({ onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setLocalError('');
     const additionalNotes = symptomText.trim();
-    const allSymptoms = [...selectedSymptoms];
-    if (additionalNotes) {
-      allSymptoms.push(additionalNotes);
+
+    if (selectedSymptoms.length === 0 && !additionalNotes) {
+      setLocalError('Please select at least one symptom or describe the issue.');
+      return;
     }
-    if (allSymptoms.length > 0) {
-      onSubmit({
-        selectedSymptoms,
-        additionalNotes
-      });
-    } else {
-      alert('Please select or describe at least one symptom');
+
+    if (selectedSymptoms.length === 0 && looksLikeGibberish(additionalNotes)) {
+      setLocalError(
+        'Your input looks like random characters. Please describe the actual fault — e.g. "screen is cracked" or "won\'t turn on".'
+      );
+      return;
     }
+
+    onSubmit({ selectedSymptoms, additionalNotes });
   };
+
+  const displayError = serverError || localError;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -80,12 +104,21 @@ export const SymptomInput = ({ onSubmit }) => {
         </label>
         <textarea
           value={symptomText}
-          onChange={(e) => setSymptomText(e.target.value)}
-          placeholder="Describe any additional issues or details..."
+          onChange={(e) => { setSymptomText(e.target.value); setLocalError(''); }}
+          placeholder="e.g. The screen flickers and the battery drains in 2 hours..."
           rows="4"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            displayError ? 'border-red-400' : 'border-gray-300'
+          }`}
         />
       </div>
+
+      {displayError && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <p>{displayError}</p>
+        </div>
+      )}
 
       <button
         type="submit"

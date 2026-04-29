@@ -12,6 +12,7 @@ from pathlib import Path
 from app.models.diagnosis_model import FaultDiagnosisAI
 from app.models.prediction_model import FailurePredictionAI
 from app.models.repair_model import RepairRecommendationAI
+from app.brand_knowledge import get_brand_actions
 
 app = FastAPI(title="SmartFix AI System", version="1.0.0")
 
@@ -43,7 +44,7 @@ class LoginResponse(BaseModel):
 class DiagnosisRequest(BaseModel):
     deviceType: str
     brand: str
-    model: str
+    model: Optional[str] = ''
     symptoms: str
     symptomsList: List[str] = []
     additionalNotes: Optional[str] = None
@@ -61,6 +62,10 @@ class DiagnosisResponse(BaseModel):
     clarificationMessage: Optional[str] = None
     personalizedGreeting: Optional[str] = None
     explanation: Optional[str] = None
+    reportedSymptoms: Optional[str] = None
+    deviceType: Optional[str] = None
+    deviceBrand: Optional[str] = None
+    deviceModel: Optional[str] = None
 
 class PredictionRequest(BaseModel):
     deviceId: str
@@ -123,6 +128,23 @@ async def diagnose_fault(request: DiagnosisRequest):
             additional_notes=request.additionalNotes
         )
 
+        # Reject meaningless / gibberish input before running full diagnosis
+        input_quality = symptom_analysis.get("input_quality", {})
+        if not input_quality.get("is_valid", True):
+            clarification = (
+                symptom_analysis.get("clarification_message")
+                or input_quality.get("message")
+                or "Please describe the device fault clearly (e.g. 'screen is cracked', 'won\\'t turn on')."
+            )
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "invalid_input",
+                    "message": clarification,
+                    "issue": input_quality.get("issue", "unknown"),
+                }
+            )
+
         # Get diagnosis prediction
         result = diagnosis_ai.predict(
             device_type=request.deviceType,
@@ -164,34 +186,36 @@ async def diagnose_fault(request: DiagnosisRequest):
         actions = result.get("recommendedActions") or []
         top_actions = actions[:3]
 
+        # Store reported symptoms for frontend display
+        result["reportedSymptoms"] = referenced_text
+
         if is_valid:
-            explanation = (
-                f"You reported: '{referenced_text[:200]}{'...' if len(referenced_text) > 200 else ''}'. "
-                f"From your description, I detected patterns: {patterns_text}. "
-                f"Related device issues: {issues_text}. "
-                f"Based on this, the most likely fault is '{primary_fault}' (confidence {confidence:.2f}). "
-                f"Severity: {severity_level}; urgency: {urgency}."
-            )
-            if first_component:
-                explanation += f" Start by inspecting: {first_component}."
-            if components:
-                explanation += f" Components to check: {', '.join(components[:5])}."
-            if top_actions:
-                explanation += f" Recommended steps: {', '.join(top_actions)}."
+            explanation = f"Based on this, the most likely fault is '{primary_fault}'."
         else:
             explanation = (
-                f"I received: '{referenced_text[:120]}{'...' if len(referenced_text) > 120 else ''}'. "
-                f"This input looks unclear ({input_quality.get('issue')}). "
+                "The description provided is unclear. "
                 "Please describe what is not working, when it started, and any error messages."
             )
 
-        # Personalized greeting (optional)
+        # Replace generic 'Inspect X' actions with brand-specific step-by-step instructions
+        result["recommendedActions"] = get_brand_actions(
+            brand=request.brand,
+            fault=primary_fault,
+            symptoms=referenced_text,
+        )
+
+        # Personalized greeting — just the name greeting
         user_name = (request.userName or "").strip()
         if user_name:
-            result["personalizedGreeting"] = f"Yes {user_name}, {explanation}"
+            result["personalizedGreeting"] = f"Hello {user_name}!"
         else:
-            result["personalizedGreeting"] = f"Yes, {explanation}"
+            result["personalizedGreeting"] = None
         result["explanation"] = explanation
+
+        # Attach device context so the frontend can display device-specific results
+        result["deviceType"] = request.deviceType
+        result["deviceBrand"] = request.brand
+        result["deviceModel"] = request.model
         
         return result
     except Exception as e:
@@ -271,15 +295,6 @@ async def get_repair_recommendations(diagnosis_id: str):
     try:
         recommendations = repair_ai.get_recommendations(diagnosis_id)
         return recommendations
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/devices/models")
-async def get_models(deviceType: str, brand: str):
-    """Get known models for selected device type and brand."""
-    try:
-        models = diagnosis_ai.get_known_models(device_type=deviceType, brand=brand)
-        return {"models": models}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

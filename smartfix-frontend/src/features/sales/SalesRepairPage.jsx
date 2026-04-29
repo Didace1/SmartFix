@@ -12,7 +12,8 @@ const STATUS_COLORS = {
   PENDING: 'bg-yellow-100 text-yellow-800',
   ASSIGNED: 'bg-blue-100 text-blue-800',
   IN_PROGRESS: 'bg-orange-100 text-orange-800',
-  COMPLETED: 'bg-green-100 text-green-800'
+  COMPLETED: 'bg-green-100 text-green-800',
+  ESCALATED: 'bg-red-100 text-red-800'
 };
 
 export const SalesRepairPage = () => {
@@ -23,8 +24,11 @@ export const SalesRepairPage = () => {
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [newTask, setNewTask] = useState({
     deviceType: '',
-    deviceModel: ''
+    deviceModel: '',
+    repairNote: '',
+    technicianId: ''
   });
+  const [intakeTechPick, setIntakeTechPick] = useState({});
 
   const loadRepairTasks = async () => {
     try {
@@ -91,9 +95,72 @@ export const SalesRepairPage = () => {
       toast.error('Please enter device type');
       return;
     }
-    await handleCreateTask(newTask);
-    setNewTask({ deviceType: '', deviceModel: '' });
+    const payload = {
+      deviceType: newTask.deviceType,
+      deviceModel: newTask.deviceModel,
+      repairNote: newTask.repairNote
+    };
+    try {
+      const res = await fetch(`${SYSTEM_BACKEND_BASE_URL}/api/repair-tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        if (newTask.technicianId) {
+          await fetch(`${SYSTEM_BACKEND_BASE_URL}/api/repair-tasks/${created.id}/assign`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ technicianId: Number(newTask.technicianId) })
+          });
+          toast.success('Repair task created and technician assigned');
+        } else {
+          toast.success('Repair task created');
+        }
+        await loadRepairTasks();
+      } else {
+        toast.error('Failed to create repair task');
+      }
+    } catch {
+      toast.error('Backend not reachable');
+    }
+    setNewTask({ deviceType: '', deviceModel: '', repairNote: '', technicianId: '' });
     setShowNewTaskForm(false);
+  };
+
+  const handleCreateIntakeTask = async (intake, idx) => {
+    const techId = intakeTechPick[idx] || '';
+    const payload = {
+      deviceType: intake?.serviceContext?.deviceType || intake?.deviceType || '',
+      deviceModel: intake?.serviceContext?.deviceModel || intake?.deviceModel || '',
+      repairNote: intake?.serviceContext?.repairNote || intake?.repairNote || ''
+    };
+    try {
+      const res = await fetch(`${SYSTEM_BACKEND_BASE_URL}/api/repair-tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        if (techId) {
+          await fetch(`${SYSTEM_BACKEND_BASE_URL}/api/repair-tasks/${created.id}/assign`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ technicianId: Number(techId) })
+          });
+          toast.success('Task created and technician assigned');
+        } else {
+          toast.success('Repair task created');
+        }
+        await loadRepairTasks();
+      } else {
+        toast.error('Failed to create repair task');
+      }
+    } catch {
+      toast.error('Backend not reachable');
+    }
   };
 
   const handleAssignTechnician = async (taskId, technicianId) => {
@@ -136,6 +203,23 @@ export const SalesRepairPage = () => {
   const assignedCount = repairTasks.filter((t) => t.status === 'ASSIGNED' || t.status === 'IN_PROGRESS').length;
   const completedCount = repairTasks.filter((t) => t.status === 'COMPLETED').length;
 
+  const technicianWorkload = useMemo(() => {
+    const map = {};
+    repairTasks.forEach((t) => {
+      if (t.assignedTechnician && t.status !== 'COMPLETED') {
+        const id = t.assignedTechnician.id;
+        map[id] = (map[id] || 0) + 1;
+      }
+    });
+    return map;
+  }, [repairTasks]);
+
+  const techLabel = (tech) => {
+    const active = technicianWorkload[tech.id] || 0;
+    const badge = active === 0 ? 'No tasks' : `${active} task${active > 1 ? 's' : ''}`;
+    return `${tech.fullName} — ${tech.specialization || 'General'} (${badge})`;
+  };
+
   const unsubmittedIntakes = useMemo(() => {
     const submittedRefs = new Set(repairTasks.map((t) => t.customerRef).filter(Boolean));
     return localIntakes.filter((entry) => {
@@ -164,24 +248,40 @@ export const SalesRepairPage = () => {
           <h3 className="text-sm font-bold text-amber-900 mb-3">
             Repair requests from checkout ({unsubmittedIntakes.length}) — click to create task
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {unsubmittedIntakes.map((intake, idx) => (
-              <div key={idx} className="flex items-center justify-between bg-white rounded-lg p-3 border">
-                <div className="text-sm">
-                  <p className="text-sm text-gray-700">
-                    {intake.serviceContext?.deviceType || 'Unknown Device'}
-                    {intake.serviceContext?.deviceModel ? ` — ${intake.serviceContext.deviceModel}` : ''}
-                  </p>
-                  <p className="text-gray-500 text-xs mt-0.5">{intake.serviceContext?.repairNote || 'No note'}</p>
+              <div key={idx} className="bg-white rounded-lg p-3 border">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="text-sm">
+                    <p className="font-medium text-gray-800">
+                      {intake.serviceContext?.deviceType || 'Unknown Device'}
+                      {intake.serviceContext?.deviceModel ? ` — ${intake.serviceContext.deviceModel}` : ''}
+                    </p>
+                    <p className="text-gray-500 text-xs mt-0.5">{intake.serviceContext?.repairNote || 'No note'}</p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleCreateTask(intake)}
-                  className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 inline-flex items-center gap-1"
-                >
-                  <Plus className="w-3 h-3" />
-                  Create Task
-                </button>
+                <div className="mt-2 flex flex-col sm:flex-row gap-2">
+                  <div className="flex-1">
+                    <select
+                      value={intakeTechPick[idx] || ''}
+                      onChange={(e) => setIntakeTechPick((prev) => ({ ...prev, [idx]: e.target.value }))}
+                      className="w-full px-2 py-1.5 border rounded-lg text-sm"
+                    >
+                      <option value="">Assign technician (optional)</option>
+                      {[...technicians].sort((a, b) => (technicianWorkload[a.id] || 0) - (technicianWorkload[b.id] || 0)).map((tech) => (
+                        <option key={tech.id} value={tech.id}>{techLabel(tech)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCreateIntakeTask(intake, idx)}
+                    className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 inline-flex items-center gap-1 shrink-0"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Create Task
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -200,30 +300,64 @@ export const SalesRepairPage = () => {
         </button>
 
         {showNewTaskForm && (
-          <div className="mt-3 bg-white rounded-lg shadow p-4 border max-w-xl">
-            <h3 className="font-semibold text-gray-900 mb-3">Create Repair Task</h3>
-            <div className="space-y-2">
+          <div className="mt-3 bg-white rounded-lg shadow p-5 border max-w-xl">
+            <h3 className="font-semibold text-gray-900 mb-4">Create Repair Task</h3>
+            <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Device Type *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Laptop"
+                    value={newTask.deviceType}
+                    onChange={(e) => setNewTask({ ...newTask, deviceType: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Device Model</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. HP EliteBook"
+                    value={newTask.deviceModel}
+                    onChange={(e) => setNewTask({ ...newTask, deviceModel: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Repair Note</label>
                 <input
                   type="text"
-                  placeholder="Device Type *"
-                  value={newTask.deviceType}
-                  onChange={(e) => setNewTask({ ...newTask, deviceType: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-                <input
-                  type="text"
-                  placeholder="Device Model"
-                  value={newTask.deviceModel}
-                  onChange={(e) => setNewTask({ ...newTask, deviceModel: e.target.value })}
+                  placeholder="Describe the issue..."
+                  value={newTask.repairNote}
+                  onChange={(e) => setNewTask({ ...newTask, repairNote: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
               </div>
-              <div className="flex gap-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Assign Technician</label>
+                <select
+                  value={newTask.technicianId}
+                  onChange={(e) => setNewTask({ ...newTask, technicianId: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="">Select technician (optional)</option>
+                  {[...technicians]
+                    .sort((a, b) => (technicianWorkload[a.id] || 0) - (technicianWorkload[b.id] || 0))
+                    .map((tech) => (
+                      <option key={tech.id} value={tech.id}>{techLabel(tech)}</option>
+                    ))}
+                </select>
+                {technicians.length > 0 && (
+                  <p className="text-xs text-gray-400 mt-1">Technicians sorted by fewest active tasks first</p>
+                )}
+              </div>
+              <div className="flex gap-2 pt-1">
                 <button
                   type="button"
                   onClick={handleCreateManualTask}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
                 >
                   Create Task
                 </button>
@@ -295,33 +429,51 @@ export const SalesRepairPage = () => {
                             className="w-full px-2 py-1.5 border rounded-lg text-sm"
                           >
                             <option value="" disabled>Select technician...</option>
-                            {technicians.map((tech) => (
-                              <option key={tech.id} value={tech.id}>
-                                {tech.fullName} — {tech.specialization || 'General'}
-                              </option>
-                            ))}
+                            {[...technicians]
+                              .sort((a, b) => (technicianWorkload[a.id] || 0) - (technicianWorkload[b.id] || 0))
+                              .map((tech) => (
+                                <option key={tech.id} value={tech.id}>{techLabel(tech)}</option>
+                              ))}
                           </select>
+                          <p className="text-xs text-gray-400 mt-0.5">Sorted by fewest active tasks</p>
                         </div>
                       )}
 
-                      {task.status !== 'COMPLETED' && task.assignedTechnician && (
-                        <div className="flex gap-1">
-                          {task.status === 'ASSIGNED' && (
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateStatus(task.id, 'IN_PROGRESS')}
-                              className="px-2 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600"
+                      {task.status === 'ASSIGNED' && task.assignedTechnician && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateStatus(task.id, 'IN_PROGRESS')}
+                          className="px-2 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600"
+                        >
+                          In Progress
+                        </button>
+                      )}
+                      {task.status === 'IN_PROGRESS' && (
+                        <p className="text-xs text-orange-600 font-medium mt-1">⏳ Awaiting technician completion</p>
+                      )}
+                      {task.status === 'ESCALATED' && (
+                        <div className="mt-1 space-y-2">
+                          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                            <p className="text-xs font-semibold text-red-700">⚠️ Technician could not complete</p>
+                            {task.escalationNote && (
+                              <p className="text-xs text-red-600 mt-0.5">{task.escalationNote}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Reassign to another technician</label>
+                            <select
+                              defaultValue=""
+                              onChange={(e) => handleAssignTechnician(task.id, e.target.value)}
+                              className="w-full px-2 py-1.5 border rounded-lg text-sm"
                             >
-                              Start Work
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateStatus(task.id, 'COMPLETED')}
-                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                          >
-                            Mark Complete
-                          </button>
+                              <option value="" disabled>Select technician...</option>
+                              {[...technicians]
+                                .sort((a, b) => (technicianWorkload[a.id] || 0) - (technicianWorkload[b.id] || 0))
+                                .map((tech) => (
+                                  <option key={tech.id} value={tech.id}>{techLabel(tech)}</option>
+                                ))}
+                            </select>
+                          </div>
                         </div>
                       )}
                     </div>

@@ -176,6 +176,21 @@ class FaultDiagnosisAI:
             },
         ]
 
+    @staticmethod
+    def _build_device_context(device_type: str, brand: str, model: str) -> str:
+        """Build a device context prefix to prepend to symptom text.
+        This makes the TF-IDF features device-aware so the classifier
+        can learn that the same symptom on different devices may map
+        to different faults."""
+        parts = []
+        if device_type and device_type.strip():
+            parts.append(device_type.strip().lower())
+        if brand and brand.strip():
+            parts.append(brand.strip().lower())
+        if model and model.strip():
+            parts.append(model.strip().lower())
+        return " ".join(parts)
+
     def _build_fault_lookup(self):
         """Pre-compute average metadata per fault for fast response mapping."""
         grouped: Dict[str, Dict[str, Any]] = {}
@@ -215,7 +230,13 @@ class FaultDiagnosisAI:
         all_faults = []
         
         for record in self.training_records:
-            all_symptoms.append(record["symptoms"])
+            ctx = self._build_device_context(
+                record.get("device_type", ""),
+                record.get("brand", ""),
+                record.get("model", "")
+            )
+            text = f"{ctx} {record['symptoms']}" if ctx else record["symptoms"]
+            all_symptoms.append(text)
             all_faults.append(record["fault"])
         
         # Ensure we have enough samples for classification
@@ -553,19 +574,21 @@ class FaultDiagnosisAI:
         
         return issues
     
-    def predict(self, device_type: str, brand: str, model: str, 
-                symptoms: str, symptoms_list: List[str] = None,
+    def predict(self, device_type: str, brand: str, model: str = '', 
+                symptoms: str = '', symptoms_list: List[str] = None,
                 image_analysis: Dict = None, additional_notes: str = None) -> Dict[str, Any]:
         """Predict fault based on symptoms with enhanced analysis"""
         
         # Analyze symptoms first
         symptom_analysis = self.analyze_symptoms(symptoms, symptoms_list, additional_notes)
         
-        # Use normalized symptoms for prediction
+        # Use normalized symptoms for prediction -- prepend device context
         combined_symptoms = symptom_analysis["combined_text"]
+        device_ctx = self._build_device_context(device_type, brand, model)
+        contextualized_text = f"{device_ctx} {combined_symptoms}" if device_ctx else combined_symptoms
         
         # Vectorize input
-        input_vector = self.vectorizer.transform([combined_symptoms])
+        input_vector = self.vectorizer.transform([contextualized_text])
         
         # Get primary fault prediction
         if self.is_trained:
@@ -784,18 +807,6 @@ class FaultDiagnosisAI:
         
         return recommendations
 
-    def get_known_models(self, device_type: str, brand: str) -> List[str]:
-        """Return known models for a brand and device type from training data."""
-        device_key = (device_type or "").strip().lower()
-        brand_key = (brand or "").strip().lower()
-        models = set()
-        for record in self.training_records:
-            if record.get("device_type", "").strip().lower() == device_key and record.get("brand", "").strip().lower() == brand_key:
-                model_name = str(record.get("model", "")).strip()
-                if model_name:
-                    models.add(model_name)
-        return sorted(models)
-    
     def _filter_components_by_device_type(self, components: List[str], device_type: str, brand: str, model: str) -> List[str]:
         """Filter components to only include those relevant to the specific device type"""
         device_type_lower = device_type.lower()
@@ -808,21 +819,26 @@ class FaultDiagnosisAI:
                     'apple': ['Logic board', 'AirPort card', 'Audio board', 'Assembly'],
                     'dell': ['Motherboard', 'Wifi card', 'Network drivers'],
                     'hp': ['Motherboard', 'Wifi card', 'Network drivers'],
-                    'lenovo': ['Motherboard', 'Wifi card', 'Network drivers']
+                    'lenovo': ['Motherboard', 'Wifi card', 'Network drivers'],
+                    'asus': ['Motherboard', 'Wifi card', 'Network drivers'],
+                    'acer': ['Motherboard', 'Wifi card', 'Network drivers']
                 }
             },
             'smartphone': {
                 'common': ['Processor', 'RAM', 'Battery', 'Charging port', 'Display', 'Touch screen', 'Wifi chip', 'Antenna'],
                 'brand_specific': {
-                    'apple': ['Logic board', 'Digitizer', 'Camera module', 'Lens', 'iOS'],
-                    'samsung': ['Android', 'Camera module', 'Lens']
+                    'apple': ['Logic board', 'Digitizer', 'Camera module', 'Lens', 'iOS', 'Face ID', 'Taptic engine'],
+                    'samsung': ['Android', 'Camera module', 'Lens', 'AMOLED panel', 'S Pen digitizer'],
+                    'google': ['Android', 'Camera module', 'Tensor chip', 'Fingerprint sensor', 'Graphite sheet'],
+                    'oneplus': ['Android', 'Camera module', 'Warp charge IC', 'AMOLED panel', 'Haptic motor'],
+                    'xiaomi': ['Android', 'Camera module', 'HyperCharge IC', 'AMOLED panel', 'IR blaster']
                 }
             },
             'tablet': {
                 'common': ['Processor', 'RAM', 'Battery', 'Charging port', 'Display', 'Touch screen', 'Wifi chip', 'Antenna'],
                 'brand_specific': {
                     'apple': ['Logic board', 'Digitizer', 'Camera module', 'Lens', 'iPadOS'],
-                    'samsung': ['Android', 'Camera module', 'Lens']
+                    'samsung': ['Android', 'Camera module', 'Lens', 'S Pen digitizer']
                 }
             }
         }

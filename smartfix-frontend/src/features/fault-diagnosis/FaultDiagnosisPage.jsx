@@ -1,5 +1,7 @@
 // src/features/fault-diagnosis/FaultDiagnosisPage.jsx
 import React, { useState } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { useSelector } from 'react-redux';
 import { DeviceInfoForm } from './components/DeviceInfoForm';
 import { SymptomInput } from './components/SymptomInput';
@@ -17,6 +19,7 @@ export const FaultDiagnosisPage = () => {
   const [repairRecommendations, setRepairRecommendations] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [symptomError, setSymptomError] = useState('');
 
   const handleDeviceInfoSubmit = (info) => {
     setDeviceInfo(info);
@@ -32,6 +35,7 @@ export const FaultDiagnosisPage = () => {
     const minLoadingMs = 4000;
     setLoading(true);
     setStep(3);
+    setSymptomError('');
     setError('');
     setRepairRecommendations(null);
 
@@ -49,7 +53,6 @@ export const FaultDiagnosisPage = () => {
         userName: (user?.fullName || user?.name || '').trim() || null
       };
 
-
       const response = await fetch(`${AI_BACKEND_BASE_URL}/api/diagnosis`, {
         method: 'POST',
         headers: {
@@ -60,32 +63,33 @@ export const FaultDiagnosisPage = () => {
 
       const result = await response.json();
 
+      if (response.status === 422) {
+        const detail = result?.detail;
+        const msg = (typeof detail === 'object' ? detail?.message : detail)
+          || 'Your description is unclear. Please describe the fault in plain words.';
+        setSymptomError(msg);
+        setStep(2);
+        setLoading(false);
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(result?.detail || 'Failed to get diagnosis from AI backend');
       }
 
-      const normalizedConfidence = Number(result?.confidence || 0);
-      const confidencePercent = Number.isFinite(normalizedConfidence)
-        ? (normalizedConfidence <= 1
-          ? Math.round(normalizedConfidence * 100)
-          : Math.round(normalizedConfidence))
-        : null;
-
       const normalizedDiagnosis = {
         primaryFault: result?.primaryFault || null,
-        faultCode: result?.faultCode || null,
-        description: result?.explanation || result?.symptomAnalysis?.clarification_message || null,
+        confidence: result?.confidence || 0,
         personalizedGreeting: result?.personalizedGreeting || null,
-        confidence: confidencePercent,
+        reportedSymptoms: result?.reportedSymptoms || mergedSymptomText,
         possibleCauses: (result?.alternativeFaults || [])
           .map((item) => item?.fault)
           .filter(Boolean),
+        alternativeFaults: result?.alternativeFaults || [],
         affectedComponents: result?.componentsToCheck || [],
-        estimatedRepairCost: result?.estimatedRepairCost ?? null,
-        estimatedTime: result?.estimatedTime ?? null,
-        skillLevel: result?.technicianLevel || result?.skillLevel || null,
-        similarCases: result?.similarCases || [],
         recommendedActions: result?.recommendedActions || [],
+        severityLevel: result?.symptomAnalysis?.severity_indicators?.level || 'unknown',
+        urgency: result?.symptomAnalysis?.severity_indicators?.urgency || 'normal',
         requiresClarification: result?.symptomAnalysis?.requires_clarification || false,
         clarificationMessage: result?.symptomAnalysis?.clarification_message || null
       };
@@ -100,6 +104,7 @@ export const FaultDiagnosisPage = () => {
         setRepairRecommendations(repairData);
       }
     } catch (apiError) {
+      setStep(3);
       setError(apiError.message || 'Unable to diagnose issue right now.');
       setDiagnosis(null);
       setRepairRecommendations(null);
@@ -115,22 +120,184 @@ export const FaultDiagnosisPage = () => {
   };
 
   const handleGenerateReport = () => {
-    const report = {
-      deviceInfo,
-      symptoms,
-      additionalNotes,
-      diagnosis,
-      repairRecommendations,
-      timestamp: new Date().toISOString()
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const contentW = pageW - margin * 2;
+    let y = 20;
+
+    const addLine = (extra = 4) => { y += extra; };
+    const checkPage = (needed = 15) => {
+      if (y + needed > 275) { doc.addPage(); y = 20; }
     };
-    
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `diagnosis_${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    // ── Header banner ──
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, pageW, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Corex Ltd — AI Diagnosis Report', margin, 12);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated: ${new Date().toLocaleString()}`, margin, 20);
+    doc.text('Powered by SmartFix AI', pageW - margin, 20, { align: 'right' });
+    y = 36;
+    doc.setTextColor(0, 0, 0);
+
+    // ── Section helper ──
+    const sectionTitle = (title) => {
+      checkPage(14);
+      doc.setFillColor(230, 238, 255);
+      doc.rect(margin, y, contentW, 8, 'F');
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(37, 99, 235);
+      doc.text(title, margin + 2, y + 5.5);
+      doc.setTextColor(0, 0, 0);
+      y += 11;
+    };
+
+    const labelValue = (label, value) => {
+      checkPage(8);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${label}:`, margin + 2, y);
+      doc.setFont('helvetica', 'normal');
+      const lines = doc.splitTextToSize(String(value || 'N/A'), contentW - 40);
+      doc.text(lines, margin + 38, y);
+      y += lines.length * 5 + 2;
+    };
+
+    const bulletList = (items = []) => {
+      items.filter(Boolean).forEach((item) => {
+        checkPage(7);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        const lines = doc.splitTextToSize(`• ${item}`, contentW - 8);
+        doc.text(lines, margin + 4, y);
+        y += lines.length * 5 + 1;
+      });
+    };
+
+    // ── 1. Device Information ──
+    sectionTitle('1. Device Information');
+    labelValue('Device Type', deviceInfo?.type);
+    labelValue('Brand', deviceInfo?.brand);
+    labelValue('Model', deviceInfo?.model);
+    addLine(3);
+
+    // ── 2. Reported Symptoms ──
+    sectionTitle('2. Reported Symptoms');
+    labelValue('Symptoms', diagnosis?.reportedSymptoms);
+    addLine(3);
+
+    // ── 3. Primary Diagnosis ──
+    sectionTitle('3. Primary Diagnosis');
+    labelValue('Primary Fault', diagnosis?.primaryFault);
+    labelValue('Confidence', `${Math.round((diagnosis?.confidence || 0) * 100)}%`);
+    labelValue('Severity Level', diagnosis?.severityLevel || 'Unknown');
+    labelValue('Urgency', diagnosis?.urgency || 'Normal');
+    addLine(3);
+
+    // ── 4. Component Failure Prediction ──
+    sectionTitle('4. Component Failure Prediction');
+    const components = (diagnosis?.affectedComponents || []).filter(Boolean);
+    if (components.length > 0) {
+      doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+      doc.text('Components at Risk:', margin + 2, y); y += 6;
+      bulletList(components);
+    }
+    const altFaults = (diagnosis?.alternativeFaults || []).filter(f => f?.fault);
+    if (altFaults.length > 0) {
+      checkPage(8);
+      doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+      doc.text('Other Possible Faults:', margin + 2, y); y += 5;
+      autoTable(doc, {
+        startY: y,
+        margin: { left: margin + 2, right: margin },
+        head: [['Fault', 'Probability']],
+        body: altFaults.slice(0, 5).map(f => [
+          f.fault, `${Math.round((f.probability || 0) * 100)}%`
+        ]),
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 255] },
+      });
+      y = doc.lastAutoTable.finalY + 4;
+    }
+    addLine(3);
+
+    // ── 5. Recommended Actions ──
+    sectionTitle('5. Recommended Actions');
+    bulletList(diagnosis?.recommendedActions || []);
+    addLine(3);
+
+    // ── 6. Repair Recommendation ──
+    sectionTitle('6. Repair Recommendation');
+    const rec = repairRecommendations;
+    if (rec) {
+      labelValue('Fault Type', rec.faultType);
+      labelValue('Estimated Time', rec.estimatedTime ? `${rec.estimatedTime} min` : 'N/A');
+      labelValue('Estimated Cost', rec.estimatedCost ? `$${rec.estimatedCost}` : 'N/A');
+      labelValue('Success Rate', rec.successRate ? `${rec.successRate}%` : 'N/A');
+      labelValue('Skill Level', rec.skillLevel);
+      addLine(2);
+      if ((rec.repairProcedure || []).filter(Boolean).length > 0) {
+        checkPage(8);
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+        doc.text('Repair Procedure:', margin + 2, y); y += 6;
+        rec.repairProcedure.filter(Boolean).forEach((step, i) => {
+          checkPage(7);
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+          const lines = doc.splitTextToSize(`${i + 1}. ${step}`, contentW - 8);
+          doc.text(lines, margin + 4, y);
+          y += lines.length * 5 + 1;
+        });
+        addLine(2);
+      }
+      if ((rec.requiredTools || []).filter(Boolean).length > 0) {
+        checkPage(8);
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+        doc.text('Required Tools:', margin + 2, y); y += 6;
+        bulletList(rec.requiredTools);
+        addLine(2);
+      }
+      if ((rec.requiredParts || []).filter(Boolean).length > 0) {
+        checkPage(8);
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+        doc.text('Spare Parts Needed:', margin + 2, y); y += 6;
+        bulletList(rec.requiredParts);
+        addLine(2);
+      }
+      if ((rec.safetyPrecautions || []).filter(Boolean).length > 0) {
+        checkPage(8);
+        doc.setFillColor(255, 240, 240);
+        doc.rect(margin, y - 2, contentW, 7, 'F');
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(180, 30, 30);
+        doc.text('Safety Precautions:', margin + 2, y + 3.5);
+        doc.setTextColor(0, 0, 0);
+        y += 9;
+        bulletList(rec.safetyPrecautions);
+      }
+    } else {
+      doc.setFontSize(9); doc.setFont('helvetica', 'italic');
+      doc.text('Repair recommendations not available.', margin + 2, y);
+      y += 6;
+    }
+
+    // ── Footer on every page ──
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(150);
+      doc.text('Corex Ltd — SmartFix AI Diagnosis Report', margin, 290);
+      doc.text(`Page ${i} of ${totalPages}`, pageW - margin, 290, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+    }
+
+    const filename = `SmartFix_Diagnosis_${(diagnosis?.primaryFault || 'Report').replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+    doc.save(filename);
   };
 
   const handleAskFollowUp = async (followUpQuestion) => {
@@ -158,9 +325,24 @@ export const FaultDiagnosisPage = () => {
       throw new Error(result?.detail || 'Failed to get follow-up response from AI backend');
     }
 
-    const reply = result?.personalizedGreeting || result?.explanation || result?.primaryFault || 'AI returned no follow-up details.';
+    const fault = result?.primaryFault || 'Unknown fault';
+    const actions = (result?.recommendedActions || []).filter(Boolean);
+    const components = (result?.componentsToCheck || []).filter(Boolean);
 
-    return reply;
+    const parts = [];
+    parts.push(`Based on your follow-up, the most likely fault is: ${fault}.`);
+
+    if (actions.length > 0) {
+      parts.push('\nRecommended actions:');
+      actions.forEach((a) => parts.push(`  - ${a}`));
+    }
+
+    if (components.length > 0) {
+      parts.push('\nComponents to check:');
+      components.forEach((c) => parts.push(`  - ${c}`));
+    }
+
+    return parts.join('\n');
   };
 
   return (
@@ -181,7 +363,7 @@ export const FaultDiagnosisPage = () => {
                   step === index + 1 ? 'bg-blue-500 text-white' :
                   'bg-gray-300 text-gray-600'
                 }`}>
-                  {step > index + 1 ? '✓' : index + 1}
+                  {step > index + 1 ? '\u2713' : index + 1}
                 </div>
                 <span className={`ml-2 ${step === index + 1 ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
                   {label}
@@ -195,7 +377,7 @@ export const FaultDiagnosisPage = () => {
         {/* Step Content */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           {step === 1 && <DeviceInfoForm onDeviceInfoSubmit={handleDeviceInfoSubmit} />}
-          {step === 2 && <SymptomInput onSubmit={handleSymptomsSubmit} />}
+          {step === 2 && <SymptomInput onSubmit={handleSymptomsSubmit} serverError={symptomError} />}
           {step === 3 && (
             loading ? (
               <div className="py-12">
@@ -215,6 +397,7 @@ export const FaultDiagnosisPage = () => {
                   repairRecommendations={repairRecommendations}
                   onGenerateReport={handleGenerateReport}
                   onAskFollowUp={handleAskFollowUp}
+                  deviceInfo={deviceInfo}
                 />
               )
             )

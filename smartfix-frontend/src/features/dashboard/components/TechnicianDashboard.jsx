@@ -1,7 +1,7 @@
 // src/features/dashboard/components/TechnicianDashboard.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Wrench, CheckCircle, Clock, TrendingUp, AlertCircle, ClipboardList, Package, PlayCircle } from 'lucide-react';
+import { Wrench, CheckCircle, Clock, TrendingUp, AlertCircle, ClipboardList, PlayCircle } from 'lucide-react';
 
 export const TechnicianDashboard = ({ stats }) => {
   const openDiagnoses = Number(stats?.myTasks || 0);
@@ -113,7 +113,7 @@ export const TechnicianDashboard = ({ stats }) => {
 
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link
             to="/diagnosis"
             className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center font-medium"
@@ -131,13 +131,6 @@ export const TechnicianDashboard = ({ stats }) => {
             className="p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-center font-medium"
           >
             Request Spare Parts
-          </Link>
-          <Link
-            to="/inventory"
-            className="p-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-center font-medium flex items-center justify-center gap-2"
-          >
-            <Package className="w-4 h-4" />
-            Check Inventory
           </Link>
         </div>
       </div>

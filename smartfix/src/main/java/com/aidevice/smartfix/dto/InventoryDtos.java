@@ -9,6 +9,8 @@ public class InventoryDtos {
             Integer quantity,
             Integer reorderPoint,
             BigDecimal price,
-            String supplier
+            BigDecimal purchaseCost,
+            String supplier,
+            String lastStockedAt
     ) {}
 }

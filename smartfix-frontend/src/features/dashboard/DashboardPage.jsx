@@ -2,10 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { SummaryCards } from './components/SummaryCards';
-import { RecentActivities } from './components/RecentActivities';
+
 import { AdminDashboard } from './components/AdminDashboard';
 import { TechnicianDashboard } from './components/TechnicianDashboard';
-import { ManagerDashboard } from './components/ManagerDashboard';
 import { InventoryDashboard } from './components/InventoryDashboard';
 import { SalesDashboard } from './components/SalesDashboard';
 import { ROLE_DASHBOARD_CONFIG } from '../../constants/defaultUsers';
@@ -13,12 +12,10 @@ import { PageHeader } from '../../shared/components/Common/PageHeader';
 
 export const DashboardPage = () => {
   const SYSTEM_BACKEND_BASE_URL = process.env.REACT_APP_SYSTEM_BACKEND_URL || 'http://localhost:8080';
-  const AI_BACKEND_BASE_URL = process.env.REACT_APP_AI_BACKEND_URL || 'http://localhost:5000';
   const { user } = useSelector((state) => state.auth);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState(null);
-  const [backendStatus, setBackendStatus] = useState({ system: 'checking', ai: 'checking' });
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -34,7 +31,10 @@ export const DashboardPage = () => {
         const technicians = techRes.ok ? await techRes.json() : [];
 
         const roleStats = {
-          pendingRepairs: 0,
+          pendingRepairs:   Number(summary.pendingRepairs   || 0),
+          activeRepairs:    Number(summary.activeRepairs    || 0),
+          completedRepairs: Number(summary.completedRepairs || 0),
+          totalRepairs:     Number(summary.totalRepairs     || 0),
           completedToday: Number(summary.salesToday || 0),
           revenueToday: Number(summary.revenueToday || 0),
           myTasks: 0,
@@ -77,25 +77,6 @@ export const DashboardPage = () => {
     loadDashboard();
   }, [user]);
 
-  useEffect(() => {
-    const checkBackends = async () => {
-      const check = async (url) => {
-        try {
-          const res = await fetch(url);
-          return res.ok ? 'online' : 'offline';
-        } catch {
-          return 'offline';
-        }
-      };
-      const [system, ai] = await Promise.all([
-        check(`${SYSTEM_BACKEND_BASE_URL}/api/dashboard/summary`),
-        check(`${AI_BACKEND_BASE_URL}/api/health`)
-      ]);
-      setBackendStatus({ system, ai });
-    };
-    checkBackends();
-  }, []);
-
   const renderRoleSpecificDashboard = () => {
     if (!stats) return null;
     
@@ -104,8 +85,6 @@ export const DashboardPage = () => {
         return <AdminDashboard stats={stats} />;
       case 'technician':
         return <TechnicianDashboard stats={stats} />;
-      case 'manager':
-        return <ManagerDashboard stats={stats} />;
       case 'inventory':
         return <InventoryDashboard stats={stats} />;
       case 'sales':
@@ -128,28 +107,11 @@ export const DashboardPage = () => {
       <PageHeader
         title={`Welcome back, ${user?.fullName || 'User'}`}
         subtitle={config?.welcomeMessage || `${user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)} Dashboard`}
-        rightSlot={(
-          <div className="space-y-2">
-            <div className="bg-blue-100 rounded-lg px-4 py-2">
-              <p className="text-sm text-blue-800">
-                Last login: {new Date().toLocaleDateString()}
-              </p>
-            </div>
-            <div className="bg-white border rounded-lg px-4 py-2 text-xs">
-              <p className="text-gray-600">System API: <span className={backendStatus.system === 'online' ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{backendStatus.system}</span></p>
-              <p className="text-gray-600">AI API: <span className={backendStatus.ai === 'online' ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{backendStatus.ai}</span></p>
-            </div>
-          </div>
-        )}
       />
 
       {/* Role-specific dashboard content */}
       {renderRoleSpecificDashboard()}
       
-      {/* Common components for all roles */}
-      <div className="mt-6">
-        <RecentActivities userRole={user?.role} />
-      </div>
     </div>
   );
 };

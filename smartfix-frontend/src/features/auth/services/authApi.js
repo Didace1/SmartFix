@@ -29,7 +29,44 @@ export const authApi = createApi({
         return { error: { status: 401, data: { message: 'Invalid MFA code' } } };
       }
     }),
+
+    verifyOtp: builder.mutation({
+      query: (body) => ({
+        url: '/api/auth/verify-otp',
+        method: 'POST',
+        body,
+      })
+    }),
+
+    getPendingUsers: builder.query({
+      query: () => '/api/auth/pending',
+      providesTags: ['PendingUsers'],
+    }),
+
+    approveUser: builder.mutation({
+      query: (id) => ({
+        url: `/api/auth/approve/${id}`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['PendingUsers'],
+    }),
+
+    rejectUser: builder.mutation({
+      query: (id) => ({
+        url: `/api/auth/reject/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['PendingUsers'],
+    }),
   }),
 });
 
-export const { useLoginMutation, useRegisterMutation, useVerifyMfaMutation } = authApi;
+export const {
+  useLoginMutation,
+  useRegisterMutation,
+  useVerifyMfaMutation,
+  useVerifyOtpMutation,
+  useGetPendingUsersQuery,
+  useApproveUserMutation,
+  useRejectUserMutation,
+} = authApi;

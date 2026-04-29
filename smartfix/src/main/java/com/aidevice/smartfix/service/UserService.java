@@ -16,10 +16,14 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OtpService otpService;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, OtpService otpService, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.otpService = otpService;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -38,7 +42,10 @@ public class UserService {
             throw new IllegalArgumentException("Email and password are required");
         }
         if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new IllegalArgumentException("Email already exists");
+            throw new IllegalArgumentException("An account with this email address already exists");
+        }
+        if (request.phone() != null && !request.phone().isBlank() && userRepository.findByPhone(request.phone()).isPresent()) {
+            throw new IllegalArgumentException("An account with this phone number already exists");
         }
 
         User user = new User();
@@ -50,6 +57,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setSpecialization(request.specialization());
         user.setCertifications(request.certifications());
+        user.setApproved(false);
 
         User saved = userRepository.save(user);
         return mapToUserResponse(saved);
@@ -66,8 +74,47 @@ public class UserService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
+        if (!user.isApproved()) {
+            throw new IllegalArgumentException("Account pending admin approval. Please wait for an administrator to activate your account.");
+        }
+
+        String otp = otpService.generate(user.getEmail());
+        try {
+            emailService.sendOtp(user.getEmail(), otp);
+            return new AuthDtos.AuthResponse(null, true, mapToUserResponse(user), null);
+        } catch (Exception e) {
+            System.err.println("[OTP] Email send failed (" + e.getMessage() + "). OTP: " + otp);
+            return new AuthDtos.AuthResponse(null, true, mapToUserResponse(user), otp);
+        }
+    }
+
+    public AuthDtos.AuthResponse verifyOtp(AuthDtos.OtpVerifyRequest request) {
+        if (!otpService.verify(request.email(), request.otp())) {
+            throw new IllegalArgumentException("Invalid or expired OTP. Please try again.");
+        }
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
         String token = UUID.nameUUIDFromBytes((user.getEmail() + ":" + System.currentTimeMillis()).getBytes(StandardCharsets.UTF_8)).toString();
-        return new AuthDtos.AuthResponse(token, false, mapToUserResponse(user));
+        return new AuthDtos.AuthResponse(token, false, mapToUserResponse(user), null);
+    }
+
+    public List<AuthDtos.PendingUserResponse> getPendingUsers() {
+        return userRepository.findByApprovedFalse().stream()
+                .map(u -> new AuthDtos.PendingUserResponse(u.getId(), u.getFullName(), u.getEmail(), u.getPhone(), u.getRole()))
+                .toList();
+    }
+
+    @Transactional
+    public AuthDtos.UserResponse approveUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        user.setApproved(true);
+        return mapToUserResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    public void rejectUser(Long id) {
+        userRepository.deleteById(id);
     }
 
     public AuthDtos.UserResponse mapToUserResponse(User user) {
@@ -79,7 +126,8 @@ public class UserService {
                 user.getEmployeeId(),
                 user.getRole(),
                 user.getSpecialization(),
-                user.getCertifications()
+                user.getCertifications(),
+                user.isApproved()
         );
     }
 }
