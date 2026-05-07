@@ -42,7 +42,6 @@ export const LoginForm = () => {
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -51,13 +50,6 @@ export const LoginForm = () => {
       rememberMe: false,
     },
   });
-
-  // Quick login function for demo purposes
-  const quickLogin = (email, password) => {
-    setValue('email', email);
-    setValue('password', password);
-    handleSubmit(onSubmit)();
-  };
 
   const onSubmit = async (data) => {
     try {
@@ -231,35 +223,6 @@ export const LoginForm = () => {
                     ) : 'Sign In'}
                   </button>
                 </form>
-
-                {/* Quick Login */}
-                <div className="mt-7">
-                  <div className="relative mb-4">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
-                    <div className="relative flex justify-center text-xs"><span className="px-2 bg-white text-gray-400">Quick Login</span></div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-1.5">
-                    {[
-                      { label: 'Administrator', email: 'admin@corexltd.com', password: 'admin123', bg: 'bg-red-50 hover:bg-red-100', text: 'text-red-900', sub: 'text-red-500' },
-                      { label: 'Technician', email: 'technician@corexltd.com', password: 'tech123', bg: 'bg-green-50 hover:bg-green-100', text: 'text-green-900', sub: 'text-green-500' },
-                      { label: 'Inventory', email: 'inventory@corexltd.com', password: 'inv123', bg: 'bg-blue-50 hover:bg-blue-100', text: 'text-blue-900', sub: 'text-blue-500' },
-                      { label: 'Sales Staff', email: 'sales@corexltd.com', password: 'sales123', bg: 'bg-pink-50 hover:bg-pink-100', text: 'text-pink-900', sub: 'text-pink-500' },
-                    ].map((acc) => (
-                      <button
-                        key={acc.email}
-                        onClick={() => quickLogin(acc.email, acc.password)}
-                        className={`text-left px-4 py-2 ${acc.bg} rounded-lg transition flex items-center justify-between group`}
-                      >
-                        <div>
-                          <div className={`text-sm font-medium ${acc.text}`}>{acc.label}</div>
-                          <div className={`text-xs ${acc.sub}`}>{acc.email}</div>
-                        </div>
-                        <span className={`text-sm ${acc.sub} group-hover:translate-x-0.5 transition-transform`}>→</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 <div className="mt-6 text-center text-sm text-gray-500">
                   Don't have an account?{' '}

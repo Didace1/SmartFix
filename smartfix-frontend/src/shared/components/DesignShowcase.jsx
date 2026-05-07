@@ -137,7 +137,7 @@ export const DesignShowcase = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Revenue</p>
-                  <p className="text-3xl font-bold text-gray-900">$45.2K</p>
+                  <p className="text-3xl font-bold text-gray-900">45.2K RWF</p>
                   <p className="text-sm text-green-600 mt-1 flex items-center">
                     <TrendingUp className="w-4 h-4 mr-1" />
                     8% increase

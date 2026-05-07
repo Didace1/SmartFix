@@ -7,7 +7,6 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { TechnicianDashboard } from './components/TechnicianDashboard';
 import { InventoryDashboard } from './components/InventoryDashboard';
 import { SalesDashboard } from './components/SalesDashboard';
-import { ROLE_DASHBOARD_CONFIG } from '../../constants/defaultUsers';
 import { PageHeader } from '../../shared/components/Common/PageHeader';
 
 export const DashboardPage = () => {
@@ -15,7 +14,13 @@ export const DashboardPage = () => {
   const { user } = useSelector((state) => state.auth);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState(null);
+
+  const roleSubtitle = {
+    admin: 'System Administrator Dashboard',
+    technician: 'Repair Technician Dashboard',
+    inventory: 'Inventory Management Dashboard',
+    sales: 'Sales Dashboard'
+  };
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -37,27 +42,27 @@ export const DashboardPage = () => {
           totalRepairs:     Number(summary.totalRepairs     || 0),
           completedToday: Number(summary.salesToday || 0),
           revenueToday: Number(summary.revenueToday || 0),
-          myTasks: 0,
+          myTasks: Number(summary.myTasks || 0),
           activeUsers: Number(summary.users || 0),
-          systemUptime: '99.9%',
+          systemUptime: summary.systemUptime || 'N/A',
           monthlyRevenue: Number(reports.totalRevenue || 0),
-          technicianUtilization: technicians.length > 0 ? 78 : 0,
-          customerSatisfaction: 4.2,
-          costReduction: 12,
+          technicianUtilization: Number(summary.technicianUtilization || 0),
+          customerSatisfaction: Number(summary.customerSatisfaction || 0),
+          costReduction: Number(summary.costReduction || 0),
           totalParts: Number(summary.inventoryItems || 0),
           lowStockItems: Number(summary.lowStockItems || 0),
           totalValue: Number(reports.inventoryValue || 0),
-          pendingOrders: 0,
+          pendingOrders: Number(summary.pendingOrders || 0),
           topCategory: Object.keys(reports.categoryDistribution || {})[0] || 'N/A',
           salesToday: Number(summary.revenueToday || 0),
-          dailyTarget: 1500,
-          weeklySales: Number(summary.revenueToday || 0) * 5,
+          dailyTarget: Number(summary.dailyTarget || 0),
+          weeklySales: Number(summary.weeklySales || 0),
           customerCount: Number(summary.salesToday || 0),
-          conversionRate: 68,
-          topProduct: 'Laptop Battery',
-          successRate: 92,
+          conversionRate: Number(summary.conversionRate || 0),
+          topProduct: summary.topProduct || 'N/A',
+          successRate: Number(summary.successRate || 0),
           urgentTasks: Number(summary.lowStockItems || 0),
-          nextTask: 'Review pending technical jobs'
+          nextTask: summary.nextTask || 'N/A'
         };
         setStats(roleStats);
       } catch {
@@ -68,8 +73,6 @@ export const DashboardPage = () => {
           myTasks: 0
         });
       } finally {
-        const roleConfig = ROLE_DASHBOARD_CONFIG[user.role] || ROLE_DASHBOARD_CONFIG.admin;
-        setConfig(roleConfig);
         setLoading(false);
       }
     };
@@ -106,7 +109,7 @@ export const DashboardPage = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <PageHeader
         title={`Welcome back, ${user?.fullName || 'User'}`}
-        subtitle={config?.welcomeMessage || `${user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)} Dashboard`}
+        subtitle={roleSubtitle[user?.role] || `${user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)} Dashboard`}
       />
 
       {/* Role-specific dashboard content */}

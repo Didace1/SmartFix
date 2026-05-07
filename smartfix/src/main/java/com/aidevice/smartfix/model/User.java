@@ -39,7 +39,7 @@ public class User implements UserDetails {
     @Column(columnDefinition = "TEXT")
     private String certifications;
 
-    @Column(nullable = false, columnDefinition = "boolean default true")
+    @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean approved;
 
     // Implement UserDetails methods

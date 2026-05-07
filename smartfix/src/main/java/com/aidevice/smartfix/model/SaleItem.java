@@ -1,5 +1,6 @@
 package com.aidevice.smartfix.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,6 +18,7 @@ public class SaleItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sale_id", nullable = false)
+    @JsonBackReference
     private Sale sale;
 
     @ManyToOne(fetch = FetchType.EAGER)

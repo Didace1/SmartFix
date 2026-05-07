@@ -4,6 +4,7 @@ import {
   Download, AlertTriangle, Wrench, ShieldAlert, Clock,
   DollarSign, CheckCircle2, ChevronRight, Cpu, Laptop, Smartphone, Monitor
 } from 'lucide-react';
+import { formatCurrency } from '../../../shared/utils/formatters';
 
 const SEVERITY_STYLES = {
   high:    { bg: 'bg-red-100',    text: 'text-red-700',    border: 'border-red-200',    label: 'High' },
@@ -18,7 +19,7 @@ const DEVICE_ICONS = {
   tablet: Monitor,
 };
 
-export const DiagnosisResult = ({ diagnosis, repairRecommendations, onGenerateReport, onAskFollowUp, deviceInfo }) => {
+export const DiagnosisResult = ({ diagnosis, repairRecommendations, onGenerateReport, onAskFollowUp, onNewDiagnosis, deviceInfo }) => {
   const [chatInput, setChatInput] = useState('');
   const [isAsking, setIsAsking] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
@@ -72,12 +73,20 @@ export const DiagnosisResult = ({ diagnosis, repairRecommendations, onGenerateRe
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">AI Diagnosis Report</h2>
-        <button
-          onClick={onGenerateReport}
-          className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
-        >
-          <Download className="w-4 h-4" /> Download Report
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onNewDiagnosis}
+            className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+          >
+            <Wrench className="w-4 h-4" /> New Diagnosis
+          </button>
+          <button
+            onClick={onGenerateReport}
+            className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+          >
+            <Download className="w-4 h-4" /> Download Report
+          </button>
+        </div>
       </div>
 
       {/* ── Device Info Banner ── */}
@@ -217,7 +226,7 @@ export const DiagnosisResult = ({ diagnosis, repairRecommendations, onGenerateRe
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
               {[
                 { icon: Clock,        label: 'Est. Time',    value: rec.estimatedTime ? `${rec.estimatedTime} min` : 'N/A' },
-                { icon: DollarSign,   label: 'Est. Cost',    value: rec.estimatedCost ? `$${rec.estimatedCost}` : 'N/A' },
+                { icon: DollarSign,   label: 'Est. Cost',    value: rec.estimatedCost ? formatCurrency(rec.estimatedCost) : 'N/A' },
                 { icon: CheckCircle2, label: 'Success Rate', value: rec.successRate   ? `${rec.successRate}%`  : 'N/A' },
                 { icon: AlertTriangle,label: 'Skill Level',  value: rec.skillLevel    || 'N/A' },
               ].map(({ icon: Icon, label, value }) => (

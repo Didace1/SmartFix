@@ -86,8 +86,11 @@ export const RegistrationForm = () => {
         fullName: data.fullName,
         email: data.email,
         phone: data.phone,
+        employeeId: data.employeeId || null,
         role: data.role,
         password: data.password,
+        specialization: data.specialization || null,
+        certifications: data.certifications || null,
       }).unwrap();
       setRegistered(true);
     } catch (error) {

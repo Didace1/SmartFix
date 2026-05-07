@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/inventory")
@@ -21,6 +22,11 @@ public class InventoryController {
     @GetMapping
     public List<InventoryItem> getAll() {
         return inventoryService.getAll();
+    }
+
+    @GetMapping("/analytics")
+    public Map<String, Object> analytics(@RequestParam(defaultValue = "30") int periodDays) {
+        return inventoryService.getAnalytics(periodDays);
     }
 
     @PostMapping

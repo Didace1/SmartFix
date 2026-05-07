@@ -24,7 +24,7 @@ export const CustomersPage = () => {
     deviceType: '',
     deviceModel: '',
     serialNumber: '',
-    customerRef: '',
+    customerName: '',
     warrantyMonths: 12,
     purchaseDate: new Date().toISOString().split('T')[0]
   });
@@ -69,6 +69,10 @@ export const CustomersPage = () => {
       toast.error('Serial number is required');
       return;
     }
+    if (!newWarranty.customerName.trim()) {
+      toast.error('Customer name is required');
+      return;
+    }
 
     try {
       const response = await fetch(`${SYSTEM_BACKEND_BASE_URL}/api/warranties`, {
@@ -82,7 +86,7 @@ export const CustomersPage = () => {
           deviceType: '',
           deviceModel: '',
           serialNumber: '',
-          customerRef: '',
+          customerName: '',
           warrantyMonths: 12,
           purchaseDate: new Date().toISOString().split('T')[0]
         });
@@ -121,7 +125,7 @@ export const CustomersPage = () => {
     const q = searchQuery.toLowerCase();
     return (
       (w.serialNumber || '').toLowerCase().includes(q) ||
-      (w.customerRef || '').toLowerCase().includes(q) ||
+      (w.customerName || w.customerRef || '').toLowerCase().includes(q) ||
       (w.deviceType || '').toLowerCase().includes(q) ||
       (w.deviceModel || '').toLowerCase().includes(q)
     );
@@ -187,7 +191,7 @@ export const CustomersPage = () => {
               <Search className="w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by serial number, ref, device..."
+                placeholder="Search by serial number, customer name, device..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 px-3 py-2 border rounded-lg text-sm"
@@ -225,9 +229,9 @@ export const CustomersPage = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Customer Ref / Pickup Code (optional)"
-                  value={newWarranty.customerRef}
-                  onChange={(e) => setNewWarranty({ ...newWarranty, customerRef: e.target.value })}
+                  placeholder="Customer Name *"
+                  value={newWarranty.customerName}
+                  onChange={(e) => setNewWarranty({ ...newWarranty, customerName: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
                 <div className="grid grid-cols-2 gap-2">
@@ -306,8 +310,8 @@ export const CustomersPage = () => {
                               {w.deviceType}{w.deviceModel ? ` — ${w.deviceModel}` : ''}
                             </p>
                             <p className="text-sm text-gray-700">Serial: <span className="font-medium">{w.serialNumber || '-'}</span></p>
-                            {w.customerRef && (
-                              <p className="text-xs text-gray-500">Ref: {w.customerRef}</p>
+                            {(w.customerName || w.customerRef) && (
+                              <p className="text-sm text-gray-700">Customer: <span className="font-medium">{w.customerName || w.customerRef}</span></p>
                             )}
                           </div>
 

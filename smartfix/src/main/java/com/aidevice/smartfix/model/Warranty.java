@@ -37,6 +37,8 @@ public class Warranty {
 
     private String customerRef;
 
+    private String customerName;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 

@@ -57,6 +57,11 @@ public class AuthController {
             return userService.approveUser(id);
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        } catch (Exception ex) {
+            // Log the full error for debugging
+            System.err.println("Error approving user " + id + ": " + ex.getMessage());
+            ex.printStackTrace();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to approve user: " + ex.getMessage());
         }
     }
 

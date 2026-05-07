@@ -2,11 +2,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Users, Package, DollarSign, TrendingUp, Shield, Activity,
+  Users, Package, DollarSign, TrendingUp, Shield,
   AlertTriangle, Wrench, UserCheck, ShoppingCart,
   Cpu, ChevronRight, Clock
 } from 'lucide-react';
 import { useGetPendingUsersQuery } from '../../../features/auth/services/authApi';
+import { formatCurrency } from '../../../shared/utils/formatters';
 
 export const AdminDashboard = ({ stats }) => {
   const navigate = useNavigate();
@@ -19,15 +20,11 @@ export const AdminDashboard = ({ stats }) => {
       icon: Users, textColor: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200'
     },
     {
-      label: 'System Uptime', value: stats.systemUptime ?? '99.9%',
-      icon: Activity, textColor: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200'
-    },
-    {
-      label: 'Revenue Today', value: `$${Number(stats.revenueToday ?? 0).toLocaleString()}`,
+      label: 'Revenue Today', value: formatCurrency(stats.revenueToday ?? 0),
       icon: DollarSign, textColor: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200'
     },
     {
-      label: 'Monthly Revenue', value: `$${Number(stats.monthlyRevenue ?? 0).toLocaleString()}`,
+      label: 'Monthly Revenue', value: formatCurrency(stats.monthlyRevenue ?? 0),
       icon: TrendingUp, textColor: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200'
     },
     {
@@ -79,12 +76,13 @@ export const AdminDashboard = ({ stats }) => {
     },
     {
       title: 'Repair Tasks',
-      description: 'Manage spare parts requests and active repair jobs',
+      description: 'Manage repair jobs, analytics and spare parts requests',
       icon: Wrench,
       iconColor: 'text-indigo-600',
       iconBg: 'bg-indigo-50',
       actions: [
         { label: 'My Repair Tasks', path: '/my-repair-tasks' },
+        { label: 'Repair Analytics', path: '/repair-analytics' },
         { label: 'Spare Part Requests', path: '/spare-part-requests' },
       ]
     },
@@ -102,12 +100,14 @@ export const AdminDashboard = ({ stats }) => {
     },
     {
       title: 'Sales & Customers',
-      description: 'Sales records, repair orders and customer management',
+      description: 'Sales records, analytics, repair orders and customer management',
       icon: ShoppingCart,
       iconColor: 'text-green-600',
       iconBg: 'bg-green-50',
       actions: [
         { label: 'Sales', path: '/sales' },
+        { label: 'Sales History', path: '/sales-history' },
+        { label: 'Sales Analytics', path: '/sales-analytics' },
         { label: 'Sales Repairs', path: '/sales-repairs' },
         { label: 'Customers', path: '/customers' },
       ]

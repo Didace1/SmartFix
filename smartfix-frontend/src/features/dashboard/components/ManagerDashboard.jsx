@@ -1,6 +1,7 @@
 // src/features/dashboard/components/ManagerDashboard.jsx
 import React from 'react';
 import { TrendingUp, Users, DollarSign, Target, BarChart3, AlertTriangle } from 'lucide-react';
+import { formatCurrency } from '../../../shared/utils/formatters';
 
 export const ManagerDashboard = ({ stats }) => {
   return (
@@ -10,7 +11,7 @@ export const ManagerDashboard = ({ stats }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm">Monthly Revenue</p>
-              <p className="text-2xl font-bold text-green-600">${stats.monthlyRevenue}</p>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.monthlyRevenue)}</p>
             </div>
             <DollarSign className="w-8 h-8 text-green-300" />
           </div>

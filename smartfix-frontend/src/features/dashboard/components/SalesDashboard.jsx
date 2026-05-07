@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, AreaChart, Area
 } from 'recharts';
+import { formatCurrency } from '../../../shared/utils/formatters';
 
 const SYSTEM_BACKEND_BASE_URL = process.env.REACT_APP_SYSTEM_BACKEND_URL || 'http://localhost:8080';
 
@@ -105,7 +106,7 @@ export const SalesDashboard = ({ stats }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase">Today's Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">${todayRevenue.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(todayRevenue)}</p>
               <p className="text-xs text-gray-400 mt-1">{todaySales.length} transaction{todaySales.length !== 1 ? 's' : ''}</p>
             </div>
             <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
@@ -117,7 +118,7 @@ export const SalesDashboard = ({ stats }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">${totalRevenue.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalRevenue)}</p>
               <p className="text-xs text-gray-400 mt-1">{sales.length} total sales</p>
             </div>
             <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
@@ -155,7 +156,7 @@ export const SalesDashboard = ({ stats }) => {
       <div className="bg-white rounded-xl shadow p-5 mb-6">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-sm font-bold text-gray-700 uppercase">Daily Target</h3>
-          <span className="text-sm font-medium text-gray-500">${todayRevenue.toFixed(2)} / ${dailyTarget.toFixed(2)}</span>
+          <span className="text-sm font-medium text-gray-500">{formatCurrency(todayRevenue)} / {formatCurrency(dailyTarget)}</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3">
           <div
@@ -178,7 +179,7 @@ export const SalesDashboard = ({ stats }) => {
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip
                 formatter={(value, name) => [
-                  name === 'revenue' ? `$${value}` : value,
+                  name === 'revenue' ? formatCurrency(value) : value,
                   name === 'revenue' ? 'Revenue' : 'Orders'
                 ]}
               />
@@ -202,7 +203,7 @@ export const SalesDashboard = ({ stats }) => {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
+              <Tooltip formatter={(value) => [formatCurrency(value), 'Revenue']} />
               <Area type="monotone" dataKey="revenue" stroke="#3b82f6" fillOpacity={1} fill="url(#colorRevenue)" />
             </AreaChart>
           </ResponsiveContainer>
@@ -275,9 +276,9 @@ export const SalesDashboard = ({ stats }) => {
           <ShieldCheck className="w-5 h-5" />
           Warranties
         </Link>
-        <Link to="/inventory" className="p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2 font-medium text-sm shadow">
+        <Link to="/sales-history" className="p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2 font-medium text-sm shadow">
           <Package className="w-5 h-5" />
-          Inventory
+          Sales History
         </Link>
       </div>
     </div>

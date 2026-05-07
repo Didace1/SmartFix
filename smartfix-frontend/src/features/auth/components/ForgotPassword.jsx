@@ -27,27 +27,13 @@ export const ForgotPassword = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     
-    // Simulate API call
+    // Simulate API call until backend reset endpoint is available
     setTimeout(() => {
-      // Get all users (default + registered)
-      const defaultUsers = [
-        'admin@smartfix.com', 'technician@smartfix.com', 
-        'manager@smartfix.com', 'inventory@smartfix.com', 'sales@smartfix.com'
-      ];
-      const registeredUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      const allUsers = [...defaultUsers, ...registeredUsers.map(u => u.email)];
-      
-      // Check if email exists
-      if (allUsers.includes(data.email)) {
-        // Store reset email in localStorage (in real app, send email)
-        localStorage.setItem('resetEmail', data.email);
-        localStorage.setItem('resetToken', Math.random().toString(36).substring(2, 15));
-        
-        toast.success('Reset link sent to your email!');
-        setIsSubmitted(true);
-      } else {
-        toast.error('Email not found!');
-      }
+      // Store reset state locally for reset flow; avoid hardcoded account lists.
+      localStorage.setItem('resetEmail', data.email);
+      localStorage.setItem('resetToken', Math.random().toString(36).substring(2, 15));
+      toast.success('If this email exists, a reset link has been sent.');
+      setIsSubmitted(true);
       
       setIsLoading(false);
     }, 1500);

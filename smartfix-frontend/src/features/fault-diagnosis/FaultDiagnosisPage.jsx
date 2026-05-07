@@ -20,6 +20,7 @@ export const FaultDiagnosisPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [symptomError, setSymptomError] = useState('');
+  const [sessionId, setSessionId] = useState(null); // Track conversation session
 
   const handleDeviceInfoSubmit = (info) => {
     setDeviceInfo(info);
@@ -50,7 +51,8 @@ export const FaultDiagnosisPage = () => {
         symptoms: mergedSymptomText,
         symptomsList: selectedSymptoms,
         additionalNotes: trimmedNotes,
-        userName: (user?.fullName || user?.name || '').trim() || null
+        userName: (user?.fullName || user?.name || '').trim() || null,
+        sessionId: sessionId // Include session ID for conversation context
       };
 
       const response = await fetch(`${AI_BACKEND_BASE_URL}/api/diagnosis`, {
@@ -91,8 +93,14 @@ export const FaultDiagnosisPage = () => {
         severityLevel: result?.symptomAnalysis?.severity_indicators?.level || 'unknown',
         urgency: result?.symptomAnalysis?.severity_indicators?.urgency || 'normal',
         requiresClarification: result?.symptomAnalysis?.requires_clarification || false,
-        clarificationMessage: result?.symptomAnalysis?.clarification_message || null
+        clarificationMessage: result?.symptomAnalysis?.clarification_message || null,
+        isFollowUp: result?.isFollowUp || false
       };
+
+      // Store session ID for future requests
+      if (result?.sessionId) {
+        setSessionId(result.sessionId);
+      }
 
       setDiagnosis(normalizedDiagnosis);
 
@@ -117,6 +125,19 @@ export const FaultDiagnosisPage = () => {
         setLoading(false);
       }
     }
+  };
+
+  const handleNewDiagnosis = () => {
+    // Reset session and start over
+    setSessionId(null);
+    setStep(1);
+    setDeviceInfo(null);
+    setSymptoms([]);
+    setAdditionalNotes('');
+    setDiagnosis(null);
+    setRepairRecommendations(null);
+    setError('');
+    setSymptomError('');
   };
 
   const handleGenerateReport = () => {
@@ -316,7 +337,8 @@ export const FaultDiagnosisPage = () => {
         symptoms: followUpText,
         symptomsList: [],
         additionalNotes: '',
-        userName: (user?.fullName || user?.name || '').trim() || null
+        userName: (user?.fullName || user?.name || '').trim() || null,
+        sessionId: sessionId // Include session ID for follow-up context
       })
     });
 
@@ -325,21 +347,31 @@ export const FaultDiagnosisPage = () => {
       throw new Error(result?.detail || 'Failed to get follow-up response from AI backend');
     }
 
+    // Update session ID if returned
+    if (result?.sessionId) {
+      setSessionId(result.sessionId);
+    }
+
     const fault = result?.primaryFault || 'Unknown fault';
     const actions = (result?.recommendedActions || []).filter(Boolean);
     const components = (result?.componentsToCheck || []).filter(Boolean);
+    const isFollowUp = result?.isFollowUp || false;
 
     const parts = [];
-    parts.push(`Based on your follow-up, the most likely fault is: ${fault}.`);
+    if (isFollowUp) {
+      parts.push(`Since the previous solution didn't work, let's try: ${fault}.`);
+    } else {
+      parts.push(`Based on your follow-up, the most likely fault is: ${fault}.`);
+    }
 
     if (actions.length > 0) {
       parts.push('\nRecommended actions:');
-      actions.forEach((a) => parts.push(`  - ${a}`));
+      actions.forEach((a) => parts.push(`- ${a}`));
     }
 
     if (components.length > 0) {
       parts.push('\nComponents to check:');
-      components.forEach((c) => parts.push(`  - ${c}`));
+      components.forEach((c) => parts.push(`- ${c}`));
     }
 
     return parts.join('\n');
@@ -397,6 +429,7 @@ export const FaultDiagnosisPage = () => {
                   repairRecommendations={repairRecommendations}
                   onGenerateReport={handleGenerateReport}
                   onAskFollowUp={handleAskFollowUp}
+                  onNewDiagnosis={handleNewDiagnosis}
                   deviceInfo={deviceInfo}
                 />
               )

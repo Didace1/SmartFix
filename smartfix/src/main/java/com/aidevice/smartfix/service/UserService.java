@@ -106,10 +106,21 @@ public class UserService {
 
     @Transactional
     public AuthDtos.UserResponse approveUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        user.setApproved(true);
-        return mapToUserResponse(userRepository.save(user));
+        try {
+            User user = userRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("User with ID " + id + " not found"));
+            
+            System.out.println("Approving user: " + user.getEmail() + " (ID: " + id + ")");
+            user.setApproved(true);
+            User savedUser = userRepository.save(user);
+            System.out.println("User approved successfully: " + savedUser.getEmail());
+            
+            return mapToUserResponse(savedUser);
+        } catch (Exception e) {
+            System.err.println("Error in approveUser for ID " + id + ": " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Transactional

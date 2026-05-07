@@ -15,6 +15,8 @@ import { StockAlertsPage } from './features/inventory/StockAlertsPage';
 import { StockViewPage } from './features/inventory/StockViewPage';
 import { SalesPage } from './features/sales/SalesPage';
 import { SalesRepairPage } from './features/sales/SalesRepairPage';
+import { SalesAnalyticsPage } from './features/sales/SalesAnalyticsPage';
+import { SalesHistoryPage } from './features/sales/SalesHistoryPage';
 import { RepairGuidePage } from './features/repair/RepairGuidePage';
 import { CustomersPage } from './features/customers/CustomersPage';
 import { TechniciansPage } from './features/technicians/TechniciansPage';
@@ -22,11 +24,14 @@ import { ReportsPage } from './features/reports/ReportsPage';
 import { NotificationsPage } from './features/notifications/NotificationsPage';
 import { SparePartRequestPage } from './features/spare-parts/SparePartRequestPage';
 import { RepairTasksPage } from './features/repair-tasks/RepairTasksPage';
+import { RepairAnalyticsPage } from './features/repair-tasks/RepairAnalyticsPage';
+import { RepairHistoryPage } from './features/repair-tasks/RepairHistoryPage';
 import { RoleBasedNavbar } from './shared/components/Navigation/RoleBasedNavbar';
 import { RoleBasedRoute } from './routes/RoleBasedRoute';
 import { TermsPage } from './features/legal/TermsPage';
 import { PrivacyPolicyPage } from './features/legal/PrivacyPolicyPage';
 import { PendingUsersPage } from './features/admin/PendingUsersPage';
+import { UsersPage } from './features/admin/UsersPage';
 import { CategoryManagementPage } from './features/admin/CategoryManagementPage';
 
 const AppLayout = () => {
@@ -46,6 +51,11 @@ const AppLayout = () => {
         <Route path="/admin/pending-users" element={
           <RoleBasedRoute allowedRoles={['admin']}>
             <PendingUsersPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="/admin/users" element={
+          <RoleBasedRoute allowedRoles={['admin']}>
+            <UsersPage />
           </RoleBasedRoute>
         } />
         <Route path="/admin/categories" element={
@@ -92,6 +102,18 @@ const AppLayout = () => {
           </RoleBasedRoute>
         } />
         
+        <Route path="/repair-analytics" element={
+          <RoleBasedRoute allowedRoles={['admin']}>
+            <RepairAnalyticsPage />
+          </RoleBasedRoute>
+        } />
+
+        <Route path="/repair-history" element={
+          <RoleBasedRoute allowedRoles={['admin']}>
+            <RepairHistoryPage />
+          </RoleBasedRoute>
+        } />
+
         {/* Inventory - Admin, manager, inventory */}
         <Route path="/inventory" element={
           <RoleBasedRoute allowedRoles={['admin', 'inventory']}>
@@ -119,6 +141,18 @@ const AppLayout = () => {
         <Route path="/sales-repairs" element={
           <RoleBasedRoute allowedRoles={['admin', 'sales']}>
             <SalesRepairPage />
+          </RoleBasedRoute>
+        } />
+
+        <Route path="/sales-analytics" element={
+          <RoleBasedRoute allowedRoles={['admin']}>
+            <SalesAnalyticsPage />
+          </RoleBasedRoute>
+        } />
+
+        <Route path="/sales-history" element={
+          <RoleBasedRoute allowedRoles={['admin', 'sales']}>
+            <SalesHistoryPage />
           </RoleBasedRoute>
         } />
 

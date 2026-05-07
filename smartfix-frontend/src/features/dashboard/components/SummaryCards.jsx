@@ -1,5 +1,6 @@
 import React from 'react';
 import { Wrench, CheckCircle, DollarSign, Clock, Package, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '../../../shared/utils/formatters';
 
 export const SummaryCards = ({ stats, userRole }) => {
   const cards = [
@@ -17,7 +18,7 @@ export const SummaryCards = ({ stats, userRole }) => {
     },
     {
       title: 'Revenue Today',
-      value: `$${stats?.revenueToday || 0}`,
+      value: formatCurrency(stats?.revenueToday || 0),
       icon: <DollarSign className="w-6 h-6 text-white" />,
       color: 'bg-purple-500'
     },

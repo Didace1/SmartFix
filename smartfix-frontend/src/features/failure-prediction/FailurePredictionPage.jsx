@@ -37,7 +37,7 @@ export const FailurePredictionPage = () => {
             risk,
             remainingDays,
             predictedFailure: `Likely ${componentName} degradation`,
-            lastMaintenance: 'Based on historical records'
+            lastMaintenance: prediction.lastMaintenance || device.lastMaintenance || 'N/A'
           };
         });
         setComponents(mapped);
@@ -83,6 +83,7 @@ export const FailurePredictionPage = () => {
     : components.filter(c => c.device === selectedDevice);
 
   const devices = ['all', ...new Set(components.map(c => c.device))];
+  const monitoredDevices = new Set(components.map(c => c.device)).size;
 
   if (loading) {
     return (
@@ -128,8 +129,8 @@ export const FailurePredictionPage = () => {
           <p className="text-2xl font-bold text-orange-600">{components.filter(c => c.risk === 'critical').length}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-500 text-sm">Prediction Accuracy</p>
-          <p className="text-2xl font-bold text-green-600">94%</p>
+          <p className="text-gray-500 text-sm">Monitored Devices</p>
+          <p className="text-2xl font-bold text-green-600">{monitoredDevices}</p>
         </div>
       </div>
 

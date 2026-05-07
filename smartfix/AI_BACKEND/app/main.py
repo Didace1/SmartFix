@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import uuid
 
 # Import AI models
 from app.models.diagnosis_model import FaultDiagnosisAI
@@ -15,6 +16,89 @@ from app.models.repair_model import RepairRecommendationAI
 from app.brand_knowledge import get_brand_actions
 
 app = FastAPI(title="SmartFix AI System", version="1.0.0")
+
+# Session storage for conversation context
+conversation_sessions = {}
+
+class ConversationSession:
+    def __init__(self, session_id: str):
+        self.session_id = session_id
+        self.created_at = datetime.now()
+        self.last_updated = datetime.now()
+        self.conversation_history = []
+        self.device_context = {}
+        self.previous_diagnosis = None
+        
+    def add_interaction(self, user_input: str, ai_response: Dict[str, Any]):
+        self.conversation_history.append({
+            "timestamp": datetime.now().isoformat(),
+            "user_input": user_input,
+            "ai_response": ai_response
+        })
+        self.last_updated = datetime.now()
+        
+    def get_context_summary(self) -> str:
+        """Get a summary of previous interactions for context"""
+        if not self.conversation_history:
+            return ""
+        
+        context_parts = []
+        for interaction in self.conversation_history[-3:]:  # Last 3 interactions
+            user_input = interaction["user_input"]
+            ai_response = interaction["ai_response"]
+            primary_fault = ai_response.get("primaryFault", "Unknown")
+            context_parts.append(f"Previous issue: '{user_input}' -> Diagnosed as: {primary_fault}")
+        
+        return " | ".join(context_parts)
+    
+    def is_follow_up(self, current_input: str) -> bool:
+        """Determine if current input is a follow-up to previous diagnosis"""
+        if not self.conversation_history:
+            return False
+            
+        follow_up_indicators = [
+            # Direct failure indicators
+            "it doesn't work", "didn't work", "still not working", "same issue",
+            "tried that", "did that", "already did", "what next", "what can i do",
+            "still broken", "not fixed", "same problem", "doesn't help",
+            "what else", "next step", "another solution", "different approach",
+            
+            # Attempt indicators
+            "let me try", "i'll try", "trying", "attempted", "i tried",
+            "let me check", "checking", "i checked", "looked at",
+            
+            # Continuation indicators  
+            "but", "however", "still", "yet", "though", "although",
+            "even after", "after doing", "after trying",
+            
+            # Question indicators
+            "now what", "what should", "what do", "how do", "where do",
+            "any other", "anything else", "other options", "alternatives",
+            
+            # Progress indicators
+            "done that", "finished", "completed", "followed", "performed"
+        ]
+        
+        current_lower = current_input.lower().strip()
+        
+        # Check for exact matches
+        for indicator in follow_up_indicators:
+            if indicator in current_lower:
+                return True
+        
+        # Check for short responses that are likely follow-ups
+        short_follow_ups = [
+            "ok", "okay", "done", "tried", "yes", "no", "nope", "yeah",
+            "still", "same", "nothing", "no change", "not working"
+        ]
+        
+        # If input is very short and matches common follow-up words
+        if len(current_lower.split()) <= 3:
+            for short_indicator in short_follow_ups:
+                if current_lower == short_indicator or current_lower.startswith(short_indicator + " "):
+                    return True
+        
+        return False
 
 # CORS middleware for React frontend
 app.add_middleware(
@@ -49,6 +133,7 @@ class DiagnosisRequest(BaseModel):
     symptomsList: List[str] = []
     additionalNotes: Optional[str] = None
     userName: Optional[str] = None
+    sessionId: Optional[str] = None  # Add session tracking
 
 class DiagnosisResponse(BaseModel):
     primaryFault: str
@@ -66,6 +151,8 @@ class DiagnosisResponse(BaseModel):
     deviceType: Optional[str] = None
     deviceBrand: Optional[str] = None
     deviceModel: Optional[str] = None
+    sessionId: Optional[str] = None  # Return session ID
+    isFollowUp: bool = False  # Indicate if this is a follow-up
 
 class PredictionRequest(BaseModel):
     deviceId: str
@@ -119,8 +206,37 @@ async def login(request: LoginRequest):
 
 @app.post("/api/diagnosis", response_model=DiagnosisResponse)
 async def diagnose_fault(request: DiagnosisRequest):
-    """AI-powered fault diagnosis with enhanced symptom analysis and input validation"""
+    """AI-powered fault diagnosis with enhanced symptom analysis and conversation context"""
     try:
+        # Get or create session
+        session_id = request.sessionId or str(uuid.uuid4())
+        
+        if session_id not in conversation_sessions:
+            conversation_sessions[session_id] = ConversationSession(session_id)
+        
+        session = conversation_sessions[session_id]
+        
+        # Check if this is a follow-up to previous diagnosis
+        is_follow_up = session.is_follow_up(request.symptoms)
+        
+        # Add debugging
+        print(f"DEBUG: Session ID: {session_id}")
+        print(f"DEBUG: Input: '{request.symptoms}'")
+        print(f"DEBUG: Is follow-up detected: {is_follow_up}")
+        print(f"DEBUG: Previous diagnosis exists: {session.previous_diagnosis is not None}")
+        
+        # If it's a follow-up, provide alternative solutions
+        if is_follow_up and session.previous_diagnosis:
+            print("DEBUG: Handling as follow-up question")
+            return handle_follow_up_diagnosis(session, request)
+        
+        # Store device context for session
+        session.device_context = {
+            "deviceType": request.deviceType,
+            "brand": request.brand,
+            "model": request.model
+        }
+        
         # Analyze symptoms first
         symptom_analysis = diagnosis_ai.analyze_symptoms(
             symptoms=request.symptoms,
@@ -155,71 +271,148 @@ async def diagnose_fault(request: DiagnosisRequest):
             additional_notes=request.additionalNotes
         )
         
-        # Add symptom analysis to response
+        # Add session and context information
+        result["sessionId"] = session_id
+        result["isFollowUp"] = False
         result["symptomAnalysis"] = symptom_analysis
-        
-        # Add clarification information if needed
         result["requiresClarification"] = symptom_analysis.get("requires_clarification", False)
         result["clarificationMessage"] = symptom_analysis.get("clarification_message")
 
-        # Build explanation grounded in what the user wrote and what we extracted
-        input_quality = symptom_analysis.get("input_quality", {})
-        is_valid = bool(input_quality.get("is_valid", True))
-        primary_fault = result.get("primaryFault", "Unknown fault")
-        confidence = result.get("confidence", 0.0)
-
-        symptom_patterns = symptom_analysis.get("symptom_patterns", []) or []
-        device_issues = symptom_analysis.get("device_issues", []) or []
-        severity = symptom_analysis.get("severity_indicators", {}) or {}
-        severity_level = severity.get("level") or "unknown"
-        urgency = severity.get("urgency") or "unknown"
-
+        # Build explanation
         referenced_text = request.symptoms or ""
         if request.additionalNotes:
             referenced_text = f"{referenced_text} {request.additionalNotes}".strip()
-        referenced_text = referenced_text.strip()
-
-        patterns_text = ", ".join(symptom_patterns[:3]) if symptom_patterns else "none"
-        issues_text = ", ".join(device_issues[:3]) if device_issues else "none"
-        components = result.get("componentsToCheck") or []
-        first_component = components[0] if components else None
-        actions = result.get("recommendedActions") or []
-        top_actions = actions[:3]
-
-        # Store reported symptoms for frontend display
+        
+        primary_fault = result.get("primaryFault", "Unknown fault")
         result["reportedSymptoms"] = referenced_text
+        result["explanation"] = f"Based on your description, the most likely fault is: {primary_fault}."
 
-        if is_valid:
-            explanation = f"Based on this, the most likely fault is '{primary_fault}'."
-        else:
-            explanation = (
-                "The description provided is unclear. "
-                "Please describe what is not working, when it started, and any error messages."
-            )
-
-        # Replace generic 'Inspect X' actions with brand-specific step-by-step instructions
+        # Replace generic actions with brand-specific instructions
         result["recommendedActions"] = get_brand_actions(
             brand=request.brand,
             fault=primary_fault,
             symptoms=referenced_text,
         )
 
-        # Personalized greeting — just the name greeting
+        # Personalized greeting
         user_name = (request.userName or "").strip()
         if user_name:
             result["personalizedGreeting"] = f"Hello {user_name}!"
         else:
             result["personalizedGreeting"] = None
-        result["explanation"] = explanation
 
-        # Attach device context so the frontend can display device-specific results
+        # Attach device context
         result["deviceType"] = request.deviceType
         result["deviceBrand"] = request.brand
         result["deviceModel"] = request.model
         
+        # Store this diagnosis in session
+        session.previous_diagnosis = result
+        session.add_interaction(referenced_text, result)
+        
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+def handle_follow_up_diagnosis(session: ConversationSession, request: DiagnosisRequest) -> DiagnosisResponse:
+    """Handle follow-up questions when previous solution didn't work"""
+    previous_diagnosis = session.previous_diagnosis
+    previous_fault = previous_diagnosis.get("primaryFault", "Unknown")
+    
+    print(f"DEBUG: Previous fault was: {previous_fault}")
+    
+    # Get alternative faults from previous diagnosis
+    alternative_faults = previous_diagnosis.get("alternativeFaults", [])
+    print(f"DEBUG: Available alternatives: {len(alternative_faults)}")
+    
+    # Count how many follow-ups we've had in this session
+    follow_up_count = len([h for h in session.conversation_history if "follow-up" in h.get("user_input", "").lower()])
+    print(f"DEBUG: Follow-up count: {follow_up_count}")
+    
+    # If we have alternatives, suggest the next most likely one
+    if alternative_faults and follow_up_count < len(alternative_faults):
+        next_fault = alternative_faults[follow_up_count] if follow_up_count < len(alternative_faults) else alternative_faults[0]
+        primary_fault = next_fault.get("fault", "Hardware failure")
+        confidence = next_fault.get("confidence", 0.7)
+        
+        # Get new actions for the alternative fault
+        new_actions = get_brand_actions(
+            brand=request.brand,
+            fault=primary_fault,
+            symptoms=f"Follow-up: {request.symptoms}",
+        )
+        
+        explanation = f"Since the previous solution didn't work, let's try the next most likely cause: {primary_fault}."
+        
+    elif "cooling" in previous_fault.lower() or "thermal" in previous_fault.lower():
+        # If previous was cooling issue, try different hardware problems
+        primary_fault = "Power supply or motherboard issue"
+        confidence = 0.75
+        new_actions = [
+            "Test with a different power adapter to rule out power supply issues",
+            "Check for swollen capacitors on the motherboard",
+            "Run a memory test (MemTest86) to check for RAM issues",
+            "Check if the issue occurs in BIOS/UEFI (rules out OS problems)",
+            "Try booting from a USB drive to test if the hard drive is failing",
+            "Check all internal connections are secure (RAM, hard drive, etc.)"
+        ]
+        explanation = "Since cooling solutions didn't work, let's check for power or motherboard issues."
+        
+    elif "power" in previous_fault.lower():
+        # If previous was power issue, try software/driver problems
+        primary_fault = "Software or driver conflict"
+        confidence = 0.7
+        new_actions = [
+            "Boot into Safe Mode to check if the issue persists",
+            "Update all device drivers, especially graphics and chipset drivers",
+            "Run Windows System File Checker: sfc /scannow",
+            "Check Event Viewer for critical errors around shutdown times",
+            "Perform a clean boot to identify conflicting software",
+            "Consider a system restore to a point before the issue started"
+        ]
+        explanation = "Since hardware checks didn't help, let's investigate software-related causes."
+        
+    else:
+        # Generic escalation for other cases
+        primary_fault = "Complex hardware issue requiring professional diagnosis"
+        confidence = 0.8
+        new_actions = [
+            "Contact manufacturer support for advanced diagnostics",
+            "Visit an authorized service center for professional inspection",
+            "Consider hardware replacement if device is under warranty",
+            "Run comprehensive hardware diagnostic tools",
+            "Check for firmware updates that might resolve the issue"
+        ]
+        explanation = "Since multiple solutions haven't worked, this appears to be a complex problem requiring professional diagnosis."
+    
+    # Create follow-up response
+    follow_up_response = {
+        "primaryFault": primary_fault,
+        "confidence": confidence,
+        "alternativeFaults": alternative_faults[follow_up_count+1:] if len(alternative_faults) > follow_up_count+1 else [],
+        "similarCases": [],
+        "recommendedActions": new_actions,
+        "componentsToCheck": previous_diagnosis.get("componentsToCheck", []),
+        "symptomAnalysis": {"input_quality": {"is_valid": True}},
+        "requiresClarification": False,
+        "clarificationMessage": None,
+        "personalizedGreeting": None,
+        "explanation": explanation,
+        "reportedSymptoms": request.symptoms,
+        "deviceType": request.deviceType,
+        "deviceBrand": request.brand,
+        "deviceModel": request.model,
+        "sessionId": session.session_id,
+        "isFollowUp": True
+    }
+    
+    print(f"DEBUG: Follow-up response fault: {primary_fault}")
+    
+    # Update session
+    session.previous_diagnosis = follow_up_response
+    session.add_interaction(f"Follow-up: {request.symptoms}", follow_up_response)
+    
+    return DiagnosisResponse(**follow_up_response)
 
 @app.post("/api/diagnosis/with-image")
 async def diagnose_with_image(

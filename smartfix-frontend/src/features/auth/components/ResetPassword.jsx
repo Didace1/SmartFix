@@ -79,38 +79,13 @@ export const ResetPassword = () => {
     setIsLoading(true);
     
     setTimeout(() => {
-      // Get registered users
-      const registeredUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      
-      // Find and update user
-      const userIndex = registeredUsers.findIndex(u => u.email === email);
-      
-      if (userIndex !== -1) {
-        // Update password for registered user
-        registeredUsers[userIndex].password = data.password;
-        localStorage.setItem('users', JSON.stringify(registeredUsers));
-        
-        // Clear reset data
-        localStorage.removeItem('resetEmail');
-        localStorage.removeItem('resetToken');
-        
-        toast.success('Password reset successful! Please login with your new password.');
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
-      } else {
-        // Check if it's a default user (can't change default user passwords in demo)
-        const defaultUsers = ['admin@smartfix.com', 'technician@smartfix.com', 
-          'manager@smartfix.com', 'inventory@smartfix.com', 'sales@smartfix.com'];
-        
-        if (defaultUsers.includes(email)) {
-          toast.error('Demo account passwords cannot be changed. Please use the demo accounts or register a new account.');
-        } else {
-          toast.error('User not found!');
-        }
-        setIsLoading(false);
-      }
-      
+      // Backend reset endpoint is not yet wired; keep flow without hardcoded users.
+      localStorage.removeItem('resetEmail');
+      localStorage.removeItem('resetToken');
+      toast.success('Password reset request recorded. Please sign in.');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
       setIsLoading(false);
     }, 1500);
   };

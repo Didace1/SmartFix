@@ -1,12 +1,15 @@
 // src/features/sales/SalesPage.jsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { ShoppingCart, Search, Plus, Minus, Trash2, Printer, DollarSign, TrendingUp, UserRound, Wrench, Share2, Mail, MessageCircle, Copy } from 'lucide-react';
+import { ShoppingCart, Search, Plus, Minus, Trash2, Printer, DollarSign, TrendingUp, UserRound, Wrench, Share2, Mail, MessageCircle, Copy, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { PageHeader } from '../../shared/components/Common/PageHeader';
 import { StatCard } from '../../shared/components/Common/StatCard';
 import { EmptyState } from '../../shared/components/Common/EmptyState';
 import { LoadingState } from '../../shared/components/Common/LoadingState';
 import { DEVICE_MODELS_BY_CATEGORY } from '../../constants/deviceModels';
+import { formatCurrency, formatNumber } from '../../shared/utils/formatters';
 
 const SALE_SERVICE_LOG_KEY = 'sales_device_service_log';
 const DEVICE_TYPE_OPTIONS = ['Laptop', 'Desktop', 'Phone', 'Tablet', 'Other'];
@@ -24,8 +27,8 @@ export const SalesPage = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
-  const [customerInfo, setCustomerInfo] = useState({ name: '', email: '', phone: '' });
-  const [anonymousCustomer, setAnonymousCustomer] = useState(true);
+  const [customerInfo, setCustomerInfo] = useState({ name: '' });
+  const [anonymousCustomer, setAnonymousCustomer] = useState(false);
   const [customerRef, setCustomerRef] = useState(generateCustomerRef());
   const [pickupCode, setPickupCode] = useState(generatePickupCode());
   const [serviceContext, setServiceContext] = useState({
@@ -145,17 +148,10 @@ export const SalesPage = () => {
     const saleLog = {
       id: `sale-${Date.now()}`,
       createdAt: new Date().toISOString(),
-      customer: anonymousCustomer
-        ? {
-            mode: 'anonymous',
-            name: `Anonymous ${customerRef}`,
-            email: '',
-            phone: `Pickup Code: ${pickupCode}`
-          }
-        : {
-            mode: 'identified',
-            ...customerInfo
-          },
+      customer: {
+        mode: 'identified',
+        ...customerInfo
+      },
       serviceContext,
       items: cart.map((item) => ({
         id: item.id,
@@ -230,7 +226,7 @@ export const SalesPage = () => {
       lines.push(`- ${item.name} x ${item.quantity} @ $${Number(item.unitPrice).toFixed(2)}`);
     });
 
-    lines.push('', `TOTAL: $${Number(receipt.total).toFixed(2)}`);
+    lines.push('', `TOTAL: ${formatCurrency(receipt.total)}`);
     lines.push('Thank you for choosing SmartFix.');
     return lines.join('\n');
   };
@@ -276,7 +272,7 @@ export const SalesPage = () => {
             </thead>
             <tbody>${itemRows}</tbody>
           </table>
-          <p class="total">Total: $${Number(receipt.total).toFixed(2)}</p>
+          <p class="total">Total: ${formatCurrency(receipt.total)}</p>
           <p>Thank you for choosing SmartFix.</p>
         </body>
       </html>
@@ -335,6 +331,97 @@ export const SalesPage = () => {
     toast.success('Paste copied receipt in Instagram DM.');
   };
 
+  const handleGeneratePDF = (receiptOverride = null) => {
+    const receipt = receiptOverride || lastReceipt;
+    if (!receipt) return;
+
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      
+      // Header
+      doc.setFontSize(20);
+      doc.setFont(undefined, 'bold');
+      doc.text('SMARTFIX RECEIPT', pageWidth / 2, 30, { align: 'center' });
+      
+      // Company info
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text('SmartFix Device Repair & Sales', pageWidth / 2, 40, { align: 'center' });
+      doc.text('Professional Device Repair Services', pageWidth / 2, 45, { align: 'center' });
+      
+      // Receipt details
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      let yPos = 60;
+      
+      doc.text(`Receipt ID: ${receipt.saleId}`, margin, yPos);
+      yPos += 8;
+      doc.text(`Date: ${new Date(receipt.createdAt).toLocaleString()}`, margin, yPos);
+      yPos += 8;
+      doc.text(`Customer: ${receipt.customerName}`, margin, yPos);
+      yPos += 8;
+      
+      if (receipt.customerRef) {
+        doc.text(`Customer Ref: ${receipt.customerRef}`, margin, yPos);
+        yPos += 8;
+      }
+      
+      if (receipt.pickupCode) {
+        doc.text(`Pickup Code: ${receipt.pickupCode}`, margin, yPos);
+        yPos += 8;
+      }
+      
+      doc.text(`Device: ${receipt.deviceType || 'N/A'} ${receipt.deviceModel ? `(${receipt.deviceModel})` : ''}`, margin, yPos);
+      yPos += 15;
+      
+      // Items table
+      const tableData = receipt.items.map(item => [
+        item.name,
+        item.quantity.toString(),
+        formatCurrency(item.unitPrice),
+        formatCurrency(item.quantity * item.unitPrice)
+      ]);
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Item', 'Qty', 'Unit Price', 'Total']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [59, 130, 246] }, // Blue header
+        styles: { fontSize: 10 },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 35, halign: 'right' },
+          3: { cellWidth: 35, halign: 'right' }
+        }
+      });
+      
+      // Total
+      const finalY = doc.lastAutoTable.finalY + 10;
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text(`TOTAL: ${formatCurrency(receipt.total)}`, pageWidth - margin, finalY, { align: 'right' });
+      
+      // Footer
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text('Thank you for choosing SmartFix!', pageWidth / 2, finalY + 20, { align: 'center' });
+      doc.text('For support, contact us at support@smartfix.com', pageWidth / 2, finalY + 25, { align: 'center' });
+      
+      // Save the PDF
+      const fileName = `SmartFix_Receipt_${receipt.saleId}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      doc.save(fileName);
+      
+      toast.success('PDF receipt generated and downloaded!');
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error('Failed to generate PDF receipt');
+    }
+  };
+
   const deliverReceiptByCustomerChoice = async (receipt) => {
     if (!receipt) return;
 
@@ -367,8 +454,9 @@ export const SalesPage = () => {
       return;
     }
 
-    if (!anonymousCustomer && !customerInfo.name.trim()) {
-      toast.error('Please enter customer name');
+    // Always require customer name - no anonymous sales allowed
+    if (!customerInfo.name.trim()) {
+      toast.error('Customer name is required for all sales');
       return;
     }
 
@@ -381,14 +469,14 @@ export const SalesPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerInfo: {
-            name: anonymousCustomer ? '' : customerInfo.name,
-            email: anonymousCustomer ? '' : customerInfo.email,
-            phone: anonymousCustomer ? '' : customerInfo.phone
+            name: customerInfo.name,
+            email: '',
+            phone: ''
           },
           cartItems: cart.map((item) => ({ id: item.id, quantity: item.quantity })),
-          anonymousCustomer,
-          customerRef: anonymousCustomer ? customerRef : null,
-          pickupCode: anonymousCustomer ? pickupCode : null
+          anonymousCustomer: false, // Always require customer name
+          customerRef: null,
+          pickupCode: null
         })
       });
       const data = await response.json();
@@ -400,11 +488,11 @@ export const SalesPage = () => {
       const receiptSnapshot = {
         saleId: data?.id || `local-${Date.now()}`,
         createdAt: new Date().toISOString(),
-        customerName: anonymousCustomer ? `Anonymous ${customerRef}` : customerInfo.name,
-        customerEmail: anonymousCustomer ? '' : customerInfo.email,
-        customerPhone: anonymousCustomer ? `Pickup Code: ${pickupCode}` : customerInfo.phone,
-        customerRef: anonymousCustomer ? customerRef : null,
-        pickupCode: anonymousCustomer ? pickupCode : null,
+        customerName: customerInfo.name,
+        customerEmail: '',
+        customerPhone: '',
+        customerRef: null,
+        pickupCode: null,
         deviceType: serviceContext.deviceType,
         deviceModel: serviceContext.deviceModel,
         items: cart.map((item) => ({
@@ -420,10 +508,10 @@ export const SalesPage = () => {
       saveLocalServiceLog(checkoutTotal);
       setShowReceiptModal(true);
       setCart([]);
-      setCustomerInfo({ name: '', email: '', phone: '' });
-      setAnonymousCustomer(true);
-      setCustomerRef(generateCustomerRef());
-      setPickupCode(generatePickupCode());
+      setCustomerInfo({ name: '' });
+      setAnonymousCustomer(false); // Always require customer name
+      setCustomerRef('');
+      setPickupCode('');
       setCustomerWillingToProceed(false);
       setServiceContext({
         deviceType: '',
@@ -489,8 +577,8 @@ export const SalesPage = () => {
       {/* Sales Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <StatCard label="Today's Sales" value={todaySales.length} accent="text-blue-600" icon={<ShoppingCart className="w-8 h-8" />} />
-        <StatCard label="Today's Revenue" value={`$${todayRevenue.toFixed(2)}`} accent="text-green-600" icon={<DollarSign className="w-8 h-8" />} />
-        <StatCard label="Cart Total" value={`$${calculateTotal().toFixed(2)}`} accent="text-orange-600" icon={<Printer className="w-8 h-8" />} />
+        <StatCard label="Today's Revenue" value={formatCurrency(todayRevenue)} accent="text-green-600" icon={<DollarSign className="w-8 h-8" />} />
+        <StatCard label="Cart Total" value={formatCurrency(calculateTotal())} accent="text-orange-600" icon={<Printer className="w-8 h-8" />} />
         <StatCard label="Unique Customers" value={uniqueCustomersToday} accent="text-purple-600" icon={<TrendingUp className="w-8 h-8" />} />
       </div>
 
@@ -619,7 +707,7 @@ export const SalesPage = () => {
                           <div>
                             <h3 className="font-semibold text-gray-900">{product.name}</h3>
                             <p className="text-sm text-gray-500">{mapProductToSalesCategory(product)}</p>
-                            <p className="text-lg font-bold text-blue-600 mt-2">${product.price}</p>
+                            <p className="text-lg font-bold text-blue-600 mt-2">{formatCurrency(product.price)}</p>
                             <p className="text-xs text-gray-500">Stock: {product.stock}</p>
                           </div>
                           <button
@@ -697,7 +785,7 @@ export const SalesPage = () => {
                   <div key={item.id} className="flex items-center justify-between py-2 border-b">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-gray-500">${item.price} x {item.quantity}</p>
+                      <p className="text-xs text-gray-500">{formatCurrency(item.price)} x {formatNumber(item.quantity)}</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
@@ -727,6 +815,26 @@ export const SalesPage = () => {
               )}
             </div>
 
+            {/* Customer Information */}
+            {cart.length > 0 && (
+              <div className="border-t pt-4 mb-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <UserRound className="w-4 h-4" />
+                  Customer Name *
+                </h3>
+                <div>
+                  <input
+                    type="text"
+                    value={customerInfo.name}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
+                    placeholder="Enter customer name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Total & Checkout */}
             {cart.length > 0 && (
               <div className="border-t pt-4">
@@ -736,7 +844,7 @@ export const SalesPage = () => {
                 </div>
                 <div className="flex justify-between mb-4">
                   <span className="font-bold">Total:</span>
-                  <span className="text-xl font-bold text-blue-600">${calculateTotal().toFixed(2)}</span>
+                  <span className="text-xl font-bold text-blue-600">{formatCurrency(calculateTotal())}</span>
                 </div>
                 <button
                   onClick={handleCheckout}
@@ -764,17 +872,26 @@ export const SalesPage = () => {
               <p>Customer: <span className="font-semibold">{lastReceipt.customerName}</span></p>
               {lastReceipt.customerRef && <p>Ref: <span className="font-semibold">{lastReceipt.customerRef}</span></p>}
               {lastReceipt.pickupCode && <p>Pickup Code: <span className="font-semibold">{lastReceipt.pickupCode}</span></p>}
-              <p>Total: <span className="font-semibold text-blue-600">${Number(lastReceipt.total).toFixed(2)}</span></p>
+              <p>Total: <span className="font-semibold text-blue-600">{formatCurrency(lastReceipt.total)}</span></p>
             </div>
 
             <p className="text-xs font-semibold text-gray-700 mb-2">Print Hard Copy</p>
             <button
               type="button"
               onClick={() => { handlePrintReceipt(); setShowReceiptModal(false); }}
-              className="w-full mb-4 px-4 py-2 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-900 inline-flex items-center justify-center gap-2"
+              className="w-full mb-2 px-4 py-2 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-900 inline-flex items-center justify-center gap-2"
             >
               <Printer className="w-4 h-4" />
               Print Receipt
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { handleGeneratePDF(); setShowReceiptModal(false); }}
+              className="w-full mb-4 px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700 inline-flex items-center justify-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              Download PDF Receipt
             </button>
 
             <p className="text-xs font-semibold text-gray-700 mb-2">Share Digitally</p>

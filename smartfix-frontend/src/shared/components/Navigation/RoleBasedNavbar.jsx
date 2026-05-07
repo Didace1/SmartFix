@@ -330,6 +330,12 @@ export const RoleBasedNavbar = () => {
       roles: ['admin', 'sales']
     },
     {
+      path: '/sales-history',
+      label: 'Sales History',
+      icon: '📋',
+      roles: ['admin', 'sales']
+    },
+    {
       path: '/sales-repairs',
       label: 'Sales Repairs',
       icon: '🧰',
@@ -362,17 +368,11 @@ export const RoleBasedNavbar = () => {
 
   const adminNavGroups = [
     {
-      label: 'Operations', icon: '🔧',
-      items: [
-        { path: '/diagnosis', label: 'Fault Diagnosis', icon: '🔍' },
-        { path: '/failure-prediction', label: 'Failure Prediction', icon: '⚠️' },
-        { path: '/repair', label: 'Repair Guide', icon: '🔧' },
-      ]
-    },
-    {
       label: 'Repairs', icon: '🛠️',
       items: [
-        { path: '/my-repair-tasks', label: 'My Repair Tasks', icon: '🛠️' },
+        { path: '/technicians', label: 'Technicians', icon: '👨‍🔧' },
+        { path: '/repair-analytics', label: 'Repair Analytics', icon: '📊' },
+        { path: '/repair-history', label: 'Repair History', icon: '📋' },
         { path: '/spare-part-requests', label: 'Spare Part Requests', icon: '🧾' },
       ]
     },
@@ -388,6 +388,8 @@ export const RoleBasedNavbar = () => {
       label: 'Sales', icon: '💰',
       items: [
         { path: '/sales', label: 'Sales', icon: '💰' },
+        { path: '/sales-history', label: 'Sales History', icon: '📋' },
+        { path: '/sales-analytics', label: 'Sales Analytics', icon: '📊' },
         { path: '/sales-repairs', label: 'Sales Repairs', icon: '🧰' },
         { path: '/customers', label: 'Customers', icon: '👥' },
       ]
@@ -395,12 +397,18 @@ export const RoleBasedNavbar = () => {
     {
       label: 'Management', icon: '📊',
       items: [
-        { path: '/technicians', label: 'Technicians', icon: '👨‍🔧' },
+        { path: '/admin/users', label: 'Users', icon: '👥' },
         { path: '/reports', label: 'Reports', icon: '📈' },
+        { path: '/notifications', label: 'Notifications', icon: '🔔' },
         { path: '/admin/pending-users', label: 'User Approvals', icon: '✅' },
         { path: '/admin/categories', label: 'Categories', icon: '🏷️' },
       ]
     },
+  ];
+
+  // Direct admin links (no dropdown)
+  const adminDirectLinks = [
+    { path: '/diagnosis', label: 'Fault Diagnosis', icon: '🔍' },
   ];
 
   const handleLogout = () => {
@@ -437,6 +445,21 @@ export const RoleBasedNavbar = () => {
                 >
                   <span className="mr-1">📊</span>Dashboard
                 </Link>
+                
+                {/* Direct Links */}
+                {adminDirectLinks.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`inline-flex items-center px-3 py-2 text-sm font-medium transition-colors border-b-2 ${
+                      isActive(link.path) ? 'text-blue-600 border-blue-600' : 'text-gray-700 hover:text-blue-600 border-transparent hover:border-blue-600'
+                    }`}
+                  >
+                    <span className="mr-1">{link.icon}</span>{link.label}
+                  </Link>
+                ))}
+
+                {/* Dropdown Groups */}
                 {adminNavGroups.map((group) => (
                   <div key={group.label} className="relative">
                     <button

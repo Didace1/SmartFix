@@ -48,6 +48,7 @@ public class WarrantyController {
         warranty.setDeviceModel((String) body.getOrDefault("deviceModel", ""));
         warranty.setSerialNumber((String) body.getOrDefault("serialNumber", ""));
         warranty.setCustomerRef((String) body.getOrDefault("customerRef", ""));
+        warranty.setCustomerName((String) body.getOrDefault("customerName", ""));
         warranty.setNotes((String) body.get("notes"));
 
         int months = body.containsKey("warrantyMonths") ? ((Number) body.get("warrantyMonths")).intValue() : 12;
