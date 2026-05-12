@@ -53,7 +53,8 @@ public class ReportsController {
 
         Map<String, Long> categoryDistribution = new LinkedHashMap<>();
         for (InventoryItem item : inventory) {
-            categoryDistribution.put(item.getCategory(), categoryDistribution.getOrDefault(item.getCategory(), 0L) + 1);
+            String categoryName = item.getCategory() != null ? item.getCategory().getName() : "Uncategorized";
+            categoryDistribution.put(categoryName, categoryDistribution.getOrDefault(categoryName, 0L) + 1);
         }
 
         Map<String, Object> data = new LinkedHashMap<>();

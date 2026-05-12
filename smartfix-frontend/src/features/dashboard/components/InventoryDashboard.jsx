@@ -4,6 +4,8 @@ import { Package, AlertCircle, TrendingUp, PlusCircle, Eye, Tag } from 'lucide-r
 import { useNavigate } from 'react-router-dom';
 import { StatCard } from '../../../shared/components/Common/StatCard';
 import { formatNumber, formatCurrency } from '../../../shared/utils/formatters';
+import { AIRecommendationsWidget } from '../../inventory/components/AIRecommendationsWidget';
+import { QRCodeWidget } from '../../inventory/components/QRCodeWidget';
 import {
   ResponsiveContainer,
   LineChart,
@@ -99,8 +101,9 @@ export const InventoryDashboard = ({ stats }) => {
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         <StatCard label="Total Stock Items"   value={formatNumber(stats.totalParts)}   accent="text-blue-600"   icon={<Package className="w-5 h-5" />} />
+        <StatCard label="Total Quantity"      value={formatNumber(inventory.reduce((sum, item) => sum + (item.quantity || 0), 0))} accent="text-purple-600" icon={<Package className="w-5 h-5" />} />
         <StatCard label="Low Stock Alerts"    value={formatNumber(stats.lowStockItems)} accent="text-red-600"    icon={<AlertCircle className="w-5 h-5" />} subtitle={stats.lowStockItems > 0 ? 'Needs attention' : 'All good'} />
         <StatCard label="Total Stock Value"   value={formatCurrency(stats.totalValue)} accent="text-green-600"  icon={<TrendingUp className="w-5 h-5" />} />
       </div>
@@ -128,57 +131,88 @@ export const InventoryDashboard = ({ stats }) => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {categoryStats.map((category, index) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {categoryStats.slice(0, 5).map((category, index) => {
+              return (
+                <div 
+                  key={category.name} 
+                  className="bg-gradient-to-br from-blue-600 to-blue-700 border border-blue-200 rounded-lg p-3 hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 transform"
+                  onClick={() => navigate(`/inventory?category=${encodeURIComponent(category.name)}`)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-white truncate text-sm">{category.name}</h3>
+                    <div className="w-2.5 h-2.5 rounded-full bg-blue-300 opacity-80"></div>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-white opacity-80">Items:</span>
+                      <span className="font-semibold text-white text-sm">{formatNumber(category.count)}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-white opacity-80">Qty:</span>
+                      <span className="font-semibold text-white text-sm">{formatNumber(category.totalQuantity)}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-white opacity-80">Value:</span>
+                      <span className="font-semibold text-white text-xs">{formatCurrency(category.totalValue)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {/* Show "View All" card if there are more than 5 categories */}
+            {categoryStats.length > 5 && (
               <div 
-                key={category.name} 
-                className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => navigate(`/inventory?category=${encodeURIComponent(category.name)}`)}
+                className="bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-300 rounded-lg p-3 hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 transform flex flex-col items-center justify-center text-center"
+                onClick={() => navigate('/inventory')}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900 truncate">{category.name}</h3>
-                  <div className={`w-3 h-3 rounded-full ${
-                    index % 6 === 0 ? 'bg-blue-500' :
-                    index % 6 === 1 ? 'bg-green-500' :
-                    index % 6 === 2 ? 'bg-yellow-500' :
-                    index % 6 === 3 ? 'bg-red-500' :
-                    index % 6 === 4 ? 'bg-purple-500' : 'bg-cyan-500'
-                  }`}></div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Items:</span>
-                    <span className="font-semibold text-gray-900">{formatNumber(category.count)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Total Qty:</span>
-                    <span className="font-semibold text-gray-900">{formatNumber(category.totalQuantity)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Value:</span>
-                    <span className="font-semibold text-green-600">{formatCurrency(category.totalValue)}</span>
-                  </div>
-                </div>
+                <Package className="w-6 h-6 text-gray-600 mb-2" />
+                <span className="text-sm font-semibold text-gray-700">+{categoryStats.length - 5} More</span>
+                <span className="text-xs text-gray-600">View All Categories</span>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
 
-      {/* Top Category */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6 flex items-center gap-4">
-        <div className="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-          <Tag className="w-5 h-5 text-indigo-500" />
+      {/* Category Insights */}
+      {categoryStats.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Largest Category by Items */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <Package className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Most Items</p>
+              <p className="text-lg font-bold text-gray-900 mt-0.5">{categoryStats[0]?.name || '—'}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {formatNumber(categoryStats[0]?.count || 0)} items • {formatNumber(categoryStats[0]?.totalQuantity || 0)} total qty
+              </p>
+            </div>
+          </div>
+
+          {/* Highest Value Category */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Highest Value</p>
+              <p className="text-lg font-bold text-gray-900 mt-0.5">
+                {categoryStats.sort((a, b) => b.totalValue - a.totalValue)[0]?.name || '—'}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {formatCurrency(categoryStats.sort((a, b) => b.totalValue - a.totalValue)[0]?.totalValue || 0)} • {formatNumber(categoryStats.sort((a, b) => b.totalValue - a.totalValue)[0]?.totalQuantity || 0)} total qty
+              </p>
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Top Stock Category</p>
-          <p className="text-lg font-bold text-gray-900 mt-0.5">{stats.topCategory || '—'}</p>
-          <p className="text-xs text-gray-400 mt-0.5">Key category to monitor for stock availability</p>
-        </div>
-      </div>
+      )}
 
       {/* Analytics Section */}
       <div className="mt-8 space-y-6">
@@ -316,44 +350,57 @@ export const InventoryDashboard = ({ stats }) => {
           <h2 className="text-lg font-semibold text-gray-900 mb-1">Quick Actions</h2>
           <p className="text-sm text-gray-500">Manage your inventory efficiently</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { 
-              label: 'Add Stock', 
-              icon: <PlusCircle className="w-6 h-6" />, 
-              color: 'bg-blue-600 hover:bg-blue-700',
-              description: 'Add new stock to inventory',
-              onClick: () => navigate('/inventory?addStock=1') 
-            },
-            { 
-              label: 'Stock Alerts', 
-              icon: <AlertCircle className="w-6 h-6" />, 
-              color: 'bg-amber-500 hover:bg-amber-600',
-              description: 'View low stock warnings',
-              onClick: () => navigate('/inventory/stock-alerts') 
-            },
-            { 
-              label: 'View Stock', 
-              icon: <Eye className="w-6 h-6" />, 
-              color: 'bg-gray-700 hover:bg-gray-800',
-              description: 'Browse all inventory items',
-              onClick: () => navigate('/inventory/view') 
-            },
-          ].map(({ label, icon, color, description, onClick }) => (
-            <button
-              key={label}
-              onClick={onClick}
-              className={`${color} text-white rounded-xl p-6 flex flex-col items-start gap-3 text-left transition-all shadow-md hover:shadow-lg transform hover:-translate-y-1`}
-            >
-              <div className="w-12 h-12 rounded-lg bg-white bg-opacity-20 flex items-center justify-center">
-                {icon}
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">{label}</h3>
-                <p className="text-sm text-white text-opacity-90 mt-1">{description}</p>
-              </div>
-            </button>
-          ))}
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
+          {/* AI Recommendations Widget */}
+          <div className="lg:col-span-2">
+            <AIRecommendationsWidget />
+          </div>
+          
+          {/* QR Code Widget */}
+          <div className="lg:col-span-2">
+            <QRCodeWidget />
+          </div>
+          
+          {/* Quick Action Buttons */}
+          <div className="lg:col-span-2 grid grid-cols-1 gap-4">
+            {[
+              { 
+                label: 'Add Stock', 
+                icon: <PlusCircle className="w-6 h-6" />, 
+                color: 'bg-blue-600 hover:bg-blue-700',
+                description: 'Add new stock to inventory',
+                onClick: () => navigate('/inventory?addStock=1') 
+              },
+              { 
+                label: 'Stock Alerts', 
+                icon: <AlertCircle className="w-6 h-6" />, 
+                color: 'bg-amber-500 hover:bg-amber-600',
+                description: 'View low stock warnings',
+                onClick: () => navigate('/inventory/stock-alerts') 
+              },
+              { 
+                label: 'QR Codes', 
+                icon: <Tag className="w-6 h-6" />, 
+                color: 'bg-purple-600 hover:bg-purple-700',
+                description: 'Manage QR codes',
+                onClick: () => navigate('/inventory/qrcodes') 
+              },
+            ].map(({ label, icon, color, description, onClick }) => (
+              <button
+                key={label}
+                onClick={onClick}
+                className={`${color} text-white rounded-xl p-4 flex items-center gap-3 text-left transition-all shadow-md hover:shadow-lg transform hover:-translate-y-1 w-full`}
+              >
+                <div className="w-10 h-10 rounded-lg bg-white bg-opacity-20 flex items-center justify-center flex-shrink-0">
+                  {icon}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold">{label}</h3>
+                  <p className="text-sm text-white text-opacity-90">{description}</p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

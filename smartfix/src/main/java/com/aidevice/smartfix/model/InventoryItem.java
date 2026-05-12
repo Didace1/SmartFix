@@ -19,8 +19,9 @@ public class InventoryItem {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
     @Column(nullable = false)
     private Integer quantity;
@@ -42,7 +43,22 @@ public class InventoryItem {
     private String sku;
 
     @Column
+    private String description;
+
+    @Column
+    private String brand;
+
+    @Column
+    private String model;
+
+    @Column
+    private String imageUrl;
+
+    @Column
     private LocalDateTime createdAt;
+
+    @Column
+    private LocalDateTime updatedAt;
 
     @Column
     private LocalDateTime lastStockedAt;
@@ -50,7 +66,13 @@ public class InventoryItem {
     @PrePersist
     void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
         if (lastStockedAt == null) lastStockedAt = LocalDateTime.now();
         if (purchaseCost == null) purchaseCost = BigDecimal.ZERO;
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

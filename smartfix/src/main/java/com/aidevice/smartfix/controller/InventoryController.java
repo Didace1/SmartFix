@@ -35,6 +35,20 @@ public class InventoryController {
             return inventoryService.create(request);
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            // Handle unique constraint violations (e.g., duplicate SKU)
+            String message = "Database constraint violation: ";
+            if (ex.getMessage() != null && ex.getMessage().contains("sku")) {
+                message += "Duplicate SKU detected. Please try again.";
+            } else {
+                message += ex.getMostSpecificCause().getMessage();
+            }
+            throw new ResponseStatusException(HttpStatus.CONFLICT, message);
+        } catch (Exception ex) {
+            // Log the full error for debugging
+            ex.printStackTrace();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
+                "Failed to create inventory item: " + ex.getMessage());
         }
     }
 

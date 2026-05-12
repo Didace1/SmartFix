@@ -92,17 +92,29 @@ export const InventoryPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await response.json();
+      
       if (!response.ok) {
-        toast.error(data?.message || 'Failed to create item');
+        // Try to get error message from response
+        let errorMessage = 'Failed to create item';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message || errorData?.error || errorMessage;
+        } catch (e) {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        toast.error(errorMessage);
         return;
       }
+      
+      const data = await response.json();
       setInventory(prev => [...prev, data]);
       await loadCategories();
       toast.success(`${data.name} added to inventory`);
       setShowAddStockModal(false);
       setNewItem({ name: '', category: '', quantity: 1, price: '', purchaseCost: '' });
-    } catch {
+    } catch (error) {
+      console.error('Error creating item:', error);
       toast.error('Backend not reachable');
     }
   };

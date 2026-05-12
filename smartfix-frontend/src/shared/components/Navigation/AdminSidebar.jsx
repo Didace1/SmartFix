@@ -1,21 +1,32 @@
 // src/shared/components/Navigation/AdminSidebar.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { 
-  Bell, AlertTriangle, CheckCircle2, PackageCheck, 
-  ChevronDown, ChevronRight, LogOut, User,
-  LayoutDashboard, Search, Wrench, AlertCircle,
-  Package, ShoppingCart, Users, BarChart3,
-  Settings, UserCheck, Tags, FileText,
-  Clock, TrendingUp, Zap
+  ChevronDown, 
+  ChevronRight,
+  LayoutDashboard, 
+  Search, 
+  Wrench,
+  Package, 
+  ShoppingCart, 
+  Users, 
+  BarChart3,
+  Settings, 
+  UserCheck, 
+  Tags, 
+  FileText,
+  Clock, 
+  TrendingUp, 
+  Zap,
+  User,
+  AlertTriangle,
+  Bell,
+  QrCode
 } from 'lucide-react';
-import { logout } from '../../../store/slices/authSlice';
 
 export const AdminSidebar = () => {
-  const SYSTEM_BACKEND_BASE_URL = process.env.REACT_APP_SYSTEM_BACKEND_URL || 'http://localhost:8080';
   const { user } = useSelector((state) => state.auth);
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -25,87 +36,12 @@ export const AdminSidebar = () => {
     sales: true,
     management: true
   });
-  const [adminNotifications, setAdminNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  // Load admin notifications
-  useEffect(() => {
-    const loadAdminNotifications = async () => {
-      try {
-        const [inventoryRes, repairRes, pendingRes] = await Promise.all([
-          fetch(`${SYSTEM_BACKEND_BASE_URL}/api/inventory`),
-          fetch(`${SYSTEM_BACKEND_BASE_URL}/api/repair-tasks`),
-          fetch(`${SYSTEM_BACKEND_BASE_URL}/api/auth/pending`)
-        ]);
-        
-        const inventory = inventoryRes.ok ? await inventoryRes.json() : [];
-        const repairTasks = repairRes.ok ? await repairRes.json() : [];
-        const pendingUsers = pendingRes.ok ? await pendingRes.json() : [];
-        const notifications = [];
-        
-        if (pendingUsers.length > 0) {
-          notifications.push({ 
-            id: 'admin-pending-users', 
-            type: 'pending-users', 
-            title: `${pendingUsers.length} account${pendingUsers.length > 1 ? 's' : ''} pending approval`, 
-            detail: 'New user registrations require your approval before they can log in.', 
-            actionPath: '/admin/pending-users' 
-          });
-        }
-        
-        inventory.forEach((item) => {
-          const qty = Number(item.quantity || 0);
-          const reorder = Number(item.reorderPoint || 0);
-          if (qty === 0) {
-            notifications.push({ 
-              id: `admin-stockout-${item.id}`, 
-              type: 'stockout', 
-              title: `${item.name} is out of stock`, 
-              detail: 'Urgent: replenishment needed.', 
-              actionPath: '/inventory' 
-            });
-          } else if (qty <= reorder) {
-            notifications.push({ 
-              id: `admin-low-${item.id}`, 
-              type: 'low-stock', 
-              title: `${item.name} is running low`, 
-              detail: `${qty} left. Reorder point: ${reorder}.`, 
-              actionPath: '/inventory' 
-            });
-          }
-        });
-        
-        repairTasks.forEach((task) => {
-          if (task.status === 'PENDING') {
-            notifications.push({ 
-              id: `admin-repair-${task.id}`, 
-              type: 'pending-repair', 
-              title: `Pending repair: ${task.deviceType || 'Device'}${task.deviceModel ? ` — ${task.deviceModel}` : ''}`, 
-              detail: 'Assign a technician to handle this repair.', 
-              actionPath: '/my-repair-tasks' 
-            });
-          }
-        });
-        
-        setAdminNotifications(notifications);
-      } catch {}
-    };
-    
-    loadAdminNotifications();
-    const interval = setInterval(loadAdminNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [SYSTEM_BACKEND_BASE_URL]);
 
   const toggleGroup = (groupName) => {
     setExpandedGroups(prev => ({
       ...prev,
       [groupName]: !prev[groupName]
     }));
-  };
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
   };
 
   const isActive = (path) => location.pathname === path;
@@ -199,6 +135,12 @@ export const AdminSidebar = () => {
           label: 'View Stock', 
           icon: FileText,
           description: 'Browse inventory'
+        },
+        { 
+          path: '/inventory/qrcodes', 
+          label: 'QR Codes', 
+          icon: QrCode,
+          description: 'Manage QR codes'
         }
       ]
     },
@@ -258,8 +200,7 @@ export const AdminSidebar = () => {
           path: '/admin/pending-users', 
           label: 'User Approvals', 
           icon: UserCheck,
-          description: 'Approve new accounts',
-          badge: adminNotifications.filter(n => n.type === 'pending-users').length
+          description: 'Approve new accounts'
         },
         { 
           path: '/admin/categories', 
@@ -284,25 +225,23 @@ export const AdminSidebar = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center px-3 py-1 rounded-lg" style={{ backgroundColor: '#c0392b' }}>
-              <span style={{ fontFamily: 'Impact, Arial Black, sans-serif', letterSpacing: '0.06em', fontSize: '1.1rem', color: '#fff', fontWeight: 900 }}>
-                COREX
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full tracking-wide">
-                AI-POWERED
-              </span>
-              <span className="text-xs text-gray-400 mt-0.5">Admin Panel</span>
-            </div>
+    <div className="w-64 bg-blue-600 shadow-lg border-r border-blue-700 flex flex-col h-full text-white">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-800">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center px-3 py-1 rounded-lg" style={{ backgroundColor: '#fff' }}>
+            <span style={{ fontFamily: 'Impact, Arial Black, sans-serif', letterSpacing: '0.06em', fontSize: '1.1rem', color: '#2563eb', fontWeight: 900 }}>
+              COREX
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-semibold bg-orange-600 text-white px-2 py-0.5 rounded-full tracking-wide">
+              AI-POWERED
+            </span>
+            <span className="text-xs text-blue-200 mt-0.5">Admin Panel</span>
           </div>
         </div>
+      </div>
 
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-4">
@@ -315,8 +254,8 @@ export const AdminSidebar = () => {
                       onClick={() => toggleGroup(group.id)}
                       className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                         isGroupActive(group.paths) 
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-blue-500 text-white border border-blue-400' 
+                          : 'text-blue-100 hover:bg-blue-500 hover:text-white'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -338,24 +277,19 @@ export const AdminSidebar = () => {
                             to={item.path}
                             className={`flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${
                               isActive(item.path)
-                                ? 'bg-blue-600 text-white shadow-sm'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                ? 'bg-blue-500 text-white shadow-sm font-semibold'
+                                : 'text-blue-100 hover:bg-blue-500 hover:text-white'
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               <item.icon className="w-4 h-4" />
                               <div className="flex flex-col">
                                 <span className="font-medium">{item.label}</span>
-                                <span className={`text-xs ${isActive(item.path) ? 'text-blue-100' : 'text-gray-400'}`}>
+                                <span className={`text-xs ${isActive(item.path) ? 'text-blue-400' : 'text-blue-100'}`}>
                                   {item.description}
                                 </span>
                               </div>
                             </div>
-                            {item.badge && item.badge > 0 && (
-                              <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
-                                {item.badge}
-                              </span>
-                            )}
                           </Link>
                         ))}
                       </div>
@@ -369,14 +303,14 @@ export const AdminSidebar = () => {
                         to={item.path}
                         className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                           isActive(item.path)
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            ? 'bg-blue-500 text-white shadow-sm font-semibold'
+                            : 'text-blue-100 hover:bg-blue-500 hover:text-white'
                         }`}
                       >
                         <item.icon className="w-4 h-4" />
                         <div className="flex flex-col">
                           <span>{item.label}</span>
-                          <span className={`text-xs ${isActive(item.path) ? 'text-blue-100' : 'text-gray-400'}`}>
+                          <span className={`text-xs ${isActive(item.path) ? 'text-blue-400' : 'text-blue-100'}`}>
                             {item.description}
                           </span>
                         </div>
@@ -390,77 +324,18 @@ export const AdminSidebar = () => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200">
-          {/* Notifications */}
-          <div className="relative mb-3">
+        <div className="p-4 border-t border-blue-700">
+          {/* Quick Links */}
+          <div className="space-y-2">
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+              onClick={() => navigate('/admin/settings')}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-blue-100 hover:bg-blue-500 hover:text-white rounded-lg transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <Bell className="w-4 h-4" />
-                <span>System Alerts</span>
-              </div>
-              {adminNotifications.length > 0 && (
-                <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
-                  {adminNotifications.length}
-                </span>
-              )}
-            </button>
-
-            {showNotifications && adminNotifications.length > 0 && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto z-50">
-                <div className="p-3 border-b bg-gray-50">
-                  <h3 className="text-sm font-semibold text-gray-900">System Alerts</h3>
-                </div>
-                <div className="divide-y">
-                  {adminNotifications.slice(0, 5).map((notification) => (
-                    <button
-                      key={notification.id}
-                      onClick={() => {
-                        setShowNotifications(false);
-                        navigate(notification.actionPath);
-                      }}
-                      className="w-full text-left p-3 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          {notification.type === 'pending-users' && <UserCheck className="w-4 h-4 text-blue-500" />}
-                          {notification.type === 'stockout' && <AlertTriangle className="w-4 h-4 text-red-500" />}
-                          {notification.type === 'low-stock' && <AlertTriangle className="w-4 h-4 text-yellow-500" />}
-                          {notification.type === 'pending-repair' && <Clock className="w-4 h-4 text-orange-500" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                          <p className="text-xs text-gray-500 mt-1">{notification.detail}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* User Profile */}
-          <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'Admin User'}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
             </button>
           </div>
         </div>
-      </div>
     </div>
   );
 };

@@ -11,6 +11,9 @@ public class InventoryDtos {
             BigDecimal price,
             BigDecimal purchaseCost,
             String supplier,
-            String lastStockedAt
+            String lastStockedAt,
+            String description,
+            String brand,
+            String model
     ) {}
 }

@@ -8,6 +8,7 @@ import com.aidevice.smartfix.model.SaleItem;
 import com.aidevice.smartfix.repository.CategoryRepository;
 import com.aidevice.smartfix.repository.InventoryItemRepository;
 import com.aidevice.smartfix.repository.SaleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,9 @@ public class InventoryService {
     private final InventoryItemRepository inventoryRepository;
     private final CategoryRepository categoryRepository;
     private final SaleRepository saleRepository;
+    
+    @Autowired(required = false)
+    private QRCodeService qrCodeService;
 
     public InventoryService(
             InventoryItemRepository inventoryRepository,
@@ -93,11 +97,11 @@ public class InventoryService {
         Map<String, Integer> categoryCounts = new LinkedHashMap<>();
         Map<String, BigDecimal> categoryValue = new LinkedHashMap<>();
         for (InventoryItem item : items) {
-            String category = (item.getCategory() == null || item.getCategory().isBlank()) ? "Uncategorized" : item.getCategory();
-            categoryCounts.put(category, categoryCounts.getOrDefault(category, 0) + 1);
+            String categoryName = (item.getCategory() == null) ? "Uncategorized" : item.getCategory().getName();
+            categoryCounts.put(categoryName, categoryCounts.getOrDefault(categoryName, 0) + 1);
             BigDecimal unitCost = item.getPurchaseCost() != null ? item.getPurchaseCost() : item.getPrice();
             BigDecimal value = (unitCost == null ? BigDecimal.ZERO : unitCost).multiply(BigDecimal.valueOf(item.getQuantity() == null ? 0 : item.getQuantity()));
-            categoryValue.put(category, categoryValue.getOrDefault(category, BigDecimal.ZERO).add(value));
+            categoryValue.put(categoryName, categoryValue.getOrDefault(categoryName, BigDecimal.ZERO).add(value));
         }
 
         long lowStockCount = items.stream()
@@ -110,7 +114,7 @@ public class InventoryService {
                 .limit(5)
                 .map(i -> Map.<String, Object>of(
                         "name", i.getName(),
-                        "category", i.getCategory(),
+                        "category", i.getCategory() != null ? i.getCategory().getName() : "Uncategorized",
                         "quantity", i.getQuantity(),
                         "reorderPoint", i.getReorderPoint()
                 ))
@@ -144,18 +148,37 @@ public class InventoryService {
 
     @Transactional
     public InventoryItem create(InventoryDtos.InventoryItemRequest request) {
-        ensureCategoryExists(request.category());
+        // Log the incoming request for debugging
+        System.out.println("Creating inventory item with category: '" + request.category() + "'");
+        
+        // Validate and ensure category exists
+        Category category = ensureCategoryExists(request.category());
+        System.out.println("Category resolved: " + (category != null ? category.getName() + " (ID: " + category.getId() + ")" : "NULL"));
+        
+        if (category == null) {
+            throw new IllegalArgumentException("Category cannot be null");
+        }
+        
         InventoryItem item = new InventoryItem();
         item.setName(request.name());
-        item.setCategory(request.category());
+        item.setCategory(category);
         item.setQuantity(request.quantity() == null ? 0 : request.quantity());
         item.setReorderPoint(request.reorderPoint() == null ? 10 : request.reorderPoint());
         item.setPrice(request.price());
         item.setPurchaseCost(request.purchaseCost() == null ? BigDecimal.ZERO : request.purchaseCost());
-        // UI no longer collects supplier; store empty string if null
         item.setSupplier(request.supplier() == null ? "" : request.supplier());
         item.setSku(generateSku(request.category()));
-        // Allow explicitly provided stock entry date (date-only string)
+        if (request.description() != null) {
+            item.setDescription(request.description());
+        }
+        if (request.brand() != null) {
+            item.setBrand(request.brand());
+        }
+        if (request.model() != null) {
+            item.setModel(request.model());
+        }
+        
+        // Set last stocked date
         if (request.lastStockedAt() != null && !request.lastStockedAt().isBlank()) {
             try {
                 LocalDate date = LocalDate.parse(request.lastStockedAt());
@@ -166,25 +189,75 @@ public class InventoryService {
         } else {
             item.setLastStockedAt(LocalDateTime.now());
         }
-        return inventoryRepository.save(item);
+        
+        // Verify category is set before saving
+        if (item.getCategory() == null) {
+            throw new IllegalStateException("Category must be set before saving inventory item");
+        }
+        
+        System.out.println("About to save item with category ID: " + item.getCategory().getId());
+        
+        // Save the item first to get an ID
+        InventoryItem savedItem = inventoryRepository.save(item);
+        
+        // Schedule QR code generation after transaction commits
+        scheduleQRCodeGeneration(savedItem);
+        
+        return savedItem;
+    }
+    
+    /**
+     * Schedule QR code generation after transaction commits
+     * This prevents transaction issues during item creation
+     */
+    private void scheduleQRCodeGeneration(InventoryItem item) {
+        // Use a separate thread to avoid blocking the main transaction
+        new Thread(() -> {
+            try {
+                // Small delay to ensure transaction is committed
+                Thread.sleep(100);
+                
+                if (qrCodeService != null) {
+                    qrCodeService.createQRCodeForItem(item);
+                    System.out.println("Generated QR code for item " + item.getName());
+                } else {
+                    System.err.println("QRCodeService not available, skipping QR code generation");
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to generate QR code for item " + item.getName() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     @Transactional
     public InventoryItem update(Long id, InventoryDtos.InventoryItemRequest request) {
         InventoryItem item = inventoryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Inventory item not found"));
-        ensureCategoryExists(request.category());
+        
+        Category category = ensureCategoryExists(request.category());
         int oldQuantity = item.getQuantity() == null ? 0 : item.getQuantity();
+        
         item.setName(request.name());
-        item.setCategory(request.category());
+        item.setCategory(category);
         item.setQuantity(request.quantity());
         item.setReorderPoint(request.reorderPoint());
         item.setPrice(request.price());
         item.setPurchaseCost(request.purchaseCost() == null ? item.getPurchaseCost() : request.purchaseCost());
-        // Supplier is optional now
+        
         if (request.supplier() != null) {
             item.setSupplier(request.supplier());
         }
+        if (request.description() != null) {
+            item.setDescription(request.description());
+        }
+        if (request.brand() != null) {
+            item.setBrand(request.brand());
+        }
+        if (request.model() != null) {
+            item.setModel(request.model());
+        }
+        
         // Update lastStockedAt when an explicit date is provided or when quantity increased
         if (request.lastStockedAt() != null && !request.lastStockedAt().isBlank()) {
             try {
@@ -196,6 +269,7 @@ public class InventoryService {
         } else if (request.quantity() != null && request.quantity() > oldQuantity) {
             item.setLastStockedAt(LocalDateTime.now());
         }
+        
         return inventoryRepository.save(item);
     }
 
@@ -204,17 +278,39 @@ public class InventoryService {
         inventoryRepository.deleteById(id);
     }
 
-    private String generateSku(String category) {
-        String base = (category == null || category.isBlank()) ? "GEN" : category.substring(0, Math.min(3, category.length())).toUpperCase();
-        long next = inventoryRepository.count() + 1;
-        return base + "-" + next;
+    private String generateSku(String categoryName) {
+        String base = (categoryName == null || categoryName.isBlank()) ? "GEN" : categoryName.substring(0, Math.min(3, categoryName.length())).toUpperCase();
+        
+        // Use timestamp + random number to ensure uniqueness
+        long timestamp = System.currentTimeMillis() % 100000; // Last 5 digits of timestamp
+        int random = (int) (Math.random() * 1000); // Random 3-digit number
+        
+        String sku = base + "-" + timestamp + "-" + random;
+        
+        // Double-check for uniqueness (very unlikely to collide, but just in case)
+        int attempt = 0;
+        while (inventoryRepository.findBySku(sku).isPresent() && attempt < 10) {
+            random = (int) (Math.random() * 1000);
+            sku = base + "-" + timestamp + "-" + random;
+            attempt++;
+        }
+        
+        System.out.println("Generated SKU: " + sku);
+        return sku;
     }
 
-    private void ensureCategoryExists(String categoryName) {
+    private Category ensureCategoryExists(String categoryName) {
         if (categoryName == null || categoryName.isBlank()) {
-            return;
+            // Return a default category or create one
+            return categoryRepository.findByNameIgnoreCase("General").orElseGet(() -> {
+                Category category = new Category();
+                category.setName("General");
+                category.setDescription("Default category");
+                return categoryRepository.save(category);
+            });
         }
-        categoryRepository.findByNameIgnoreCase(categoryName).orElseGet(() -> {
+        
+        return categoryRepository.findByNameIgnoreCase(categoryName).orElseGet(() -> {
             Category category = new Category();
             category.setName(categoryName.trim());
             category.setDescription("Auto-created from inventory item");

@@ -8,6 +8,7 @@ import { PageHeader } from '../../shared/components/Common/PageHeader';
 import { StatCard } from '../../shared/components/Common/StatCard';
 import { EmptyState } from '../../shared/components/Common/EmptyState';
 import { LoadingState } from '../../shared/components/Common/LoadingState';
+import { QRCodeSalesWidget } from './components/QRCodeSalesWidget';
 import { DEVICE_MODELS_BY_CATEGORY } from '../../constants/deviceModels';
 import { formatCurrency, formatNumber } from '../../shared/utils/formatters';
 
@@ -583,188 +584,89 @@ export const SalesPage = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Products Section */}
+        {/* QR Code Scanning Section */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="mb-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Quick Category Filters</p>
-              <div className="flex flex-wrap gap-2">
-                {QUICK_CATEGORY_FILTERS.map((filter) => (
-                  <button
-                    key={filter}
-                    type="button"
-                    onClick={() => {
-                      setCategoryFilter(filter);
-                      if (filter === 'all') {
-                        setSelectedCategory('');
-                      } else {
-                        const match = SALES_CATEGORY_OPTIONS.find((c) => c.toLowerCase() === filter.toLowerCase());
-                        setSelectedCategory(match || '');
-                      }
-                      setSelectedModel('');
-                      setCurrentPage(1);
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                      categoryFilter === filter
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-                    }`}
-                  >
-                    {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
-                  </button>
-                ))}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-lg p-8 border-2 border-blue-200">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full mb-4">
+                <ShoppingCart className="w-10 h-10 text-white" />
               </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Scan to Add Products
+              </h2>
+              <p className="text-gray-600">
+                Use the QR code scanner below to quickly add products to the cart
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Choose Category</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    setSelectedModel('');
-                    setCurrentPage(1);
-                  }}
-                  className="w-full px-3 py-2 border rounded-lg"
-                >
-                  <option value="">All Categories</option>
-                  {availableCategories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Choose Model/Product</label>
-                <select
-                  value={selectedModel}
-                  onChange={(e) => { setSelectedModel(e.target.value); setCurrentPage(1); }}
-                  disabled={!selectedCategory || availableModels.length === 0}
-                  className="w-full px-3 py-2 border rounded-lg disabled:bg-gray-100"
-                >
-                  <option value="">All Models</option>
-                  {availableModels.map((model) => (
-                    <option key={model} value={model}>{model}</option>
-                  ))}
-                </select>
-              </div>
+            {/* QR Code Scanner Widget */}
+            <div className="max-w-2xl mx-auto">
+              <QRCodeSalesWidget onProductScanned={addToCart} />
             </div>
 
-            <div className="mb-3 p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-900">
-              {selectedCategory || selectedModel ? (
-                <div className="space-y-1">
-                  {selectedCategory && (
-                    <p>Category: <span className="font-semibold">{selectedCategory}</span></p>
-                  )}
-                  {selectedModel && (
-                    <p>Model: <span className="font-semibold">{selectedModel}</span></p>
-                  )}
-                  <p>Matching products: <span className="font-semibold">{filteredProducts.length}</span></p>
-                </div>
-              ) : (
-                <p className="text-gray-500">Select a category and model to filter products</p>
-              )}
-            </div>
-
-            <div className="flex items-center space-x-3 mb-4">
-              <Search className="w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by product or category..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {(() => {
-              const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
-              const paginatedProducts = filteredProducts.slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE);
-
-              return (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {loading ? (
-                      <div className="md:col-span-2">
-                        <LoadingState message="Loading products..." />
-                      </div>
-                    ) : filteredProducts.length === 0 ? (
-                      <div className="md:col-span-2">
-                        {selectedCategory || selectedModel ? (
-                          <div className="text-center py-10 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-lg font-semibold text-red-600 mb-1">Stock Out</p>
-                            <p className="text-sm text-red-500">
-                              No products available for {selectedCategory}{selectedModel ? ` — ${selectedModel}` : ''}. This item is currently out of stock.
-                            </p>
-                          </div>
-                        ) : (
-                          <EmptyState title="No products found" description="Select a category and model above to view available devices." />
-                        )}
-                      </div>
-                    ) : paginatedProducts.map(product => (
-                      <div key={product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{product.name}</h3>
-                            <p className="text-sm text-gray-500">{mapProductToSalesCategory(product)}</p>
-                            <p className="text-lg font-bold text-blue-600 mt-2">{formatCurrency(product.price)}</p>
-                            <p className="text-xs text-gray-500">Stock: {product.stock}</p>
-                          </div>
-                          <button
-                            onClick={() => addToCart(product)}
-                            disabled={product.stock === 0}
-                            className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 inline-flex items-center gap-1"
-                          >
-                            <Plus className="w-3 h-3" />
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+            {/* Instructions */}
+            <div className="mt-8 bg-white rounded-lg p-6 border border-blue-200">
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                How to Use
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">
+                    1
                   </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Scan QR Code</p>
+                    <p className="text-gray-600">Click "Scan QR Code" and enter the product's QR code</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Review Cart</p>
+                    <p className="text-gray-600">Product automatically added to cart on the right</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Adjust Quantity</p>
+                    <p className="text-gray-600">Use +/- buttons to change item quantities</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">
+                    4
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Complete Sale</p>
+                    <p className="text-gray-600">Enter customer name and click "Complete Sale"</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                  {filteredProducts.length > PRODUCTS_PER_PAGE && (
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t">
-                      <p className="text-xs text-gray-500">
-                        Showing {(currentPage - 1) * PRODUCTS_PER_PAGE + 1}–{Math.min(currentPage * PRODUCTS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                          disabled={currentPage === 1}
-                          className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-40"
-                        >
-                          Prev
-                        </button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                          <button
-                            key={page}
-                            type="button"
-                            onClick={() => setCurrentPage(page)}
-                            className={`w-8 h-8 text-sm rounded-lg border ${
-                              currentPage === page
-                                ? 'bg-blue-600 text-white border-blue-600'
-                                : 'hover:bg-gray-100'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                          disabled={currentPage === totalPages}
-                          className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-40"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              );
-            })()}
+            {/* Quick Stats */}
+            {cart.length > 0 && (
+              <div className="mt-6 grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-lg p-4 text-center border border-blue-200">
+                  <p className="text-2xl font-bold text-blue-600">{cart.length}</p>
+                  <p className="text-sm text-gray-600">Items in Cart</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 text-center border border-blue-200">
+                  <p className="text-2xl font-bold text-green-600">{cartItemCount}</p>
+                  <p className="text-sm text-gray-600">Total Units</p>
+                </div>
+                <div className="bg-white rounded-lg p-4 text-center border border-blue-200">
+                  <p className="text-2xl font-bold text-purple-600">{formatCurrency(calculateTotal())}</p>
+                  <p className="text-sm text-gray-600">Cart Total</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
