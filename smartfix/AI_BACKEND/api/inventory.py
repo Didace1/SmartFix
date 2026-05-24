@@ -4,136 +4,69 @@ from datetime import datetime, timedelta
 from collections import Counter, defaultdict
 import requests
 import os
-from typing import List, Dict, Any
+import json
+import math
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+
+# Import customer demand analysis
+from api.customer_demand import analyze_customer_demand
 
 router = APIRouter()
 
 # System Backend URL
-SYSTEM_BACKEND_URL = os.getenv('SYSTEM_BACKEND_URL', 'http://localhost:8080')
+SYSTEM_BACKEND_URL = (
+    os.getenv("SYSTEM_BACKEND_URL")
+    or os.getenv("JAVA_BACKEND_URL")
+    or "http://localhost:8080"
+)
 
-# Device catalog with market intelligence
-DEVICE_CATALOG = [
-    {
-        'device': 'iPhone 14 Pro',
-        'brand': 'Apple',
-        'category': 'Phone',
-        'market_demand': 'high',
-        'profit_margin': 'high',
-        'base_score': 4.0
-    },
-    {
-        'device': 'iPhone 13',
-        'brand': 'Apple',
-        'category': 'Phone',
-        'market_demand': 'high',
-        'profit_margin': 'high',
-        'base_score': 3.8
-    },
-    {
-        'device': 'Samsung Galaxy S23',
-        'brand': 'Samsung',
-        'category': 'Phone',
-        'market_demand': 'high',
-        'profit_margin': 'medium',
-        'base_score': 3.7
-    },
-    {
-        'device': 'MacBook Air M2',
-        'brand': 'Apple',
-        'category': 'Laptop',
-        'market_demand': 'high',
-        'profit_margin': 'medium',
-        'base_score': 4.2
-    },
-    {
-        'device': 'MacBook Pro M2',
-        'brand': 'Apple',
-        'category': 'Laptop',
-        'market_demand': 'medium',
-        'profit_margin': 'high',
-        'base_score': 3.5
-    },
-    {
-        'device': 'Dell XPS 13',
-        'brand': 'Dell',
-        'category': 'Laptop',
-        'market_demand': 'medium',
-        'profit_margin': 'medium',
-        'base_score': 3.3
-    },
-    {
-        'device': 'HP Pavilion 15',
-        'brand': 'HP',
-        'category': 'Laptop',
-        'market_demand': 'high',
-        'profit_margin': 'low',
-        'base_score': 3.0
-    },
-    {
-        'device': 'Lenovo ThinkPad X1',
-        'brand': 'Lenovo',
-        'category': 'Laptop',
-        'market_demand': 'medium',
-        'profit_margin': 'medium',
-        'base_score': 3.2
-    },
-    {
-        'device': 'iPad Pro 12.9"',
-        'brand': 'Apple',
-        'category': 'Tablet',
-        'market_demand': 'medium',
-        'profit_margin': 'high',
-        'base_score': 3.4
-    },
-    {
-        'device': 'Samsung Galaxy Tab S8',
-        'brand': 'Samsung',
-        'category': 'Tablet',
-        'market_demand': 'medium',
-        'profit_margin': 'medium',
-        'base_score': 2.8
-    },
-    {
-        'device': 'Apple Watch Series 8',
-        'brand': 'Apple',
-        'category': 'Smartwatch',
-        'market_demand': 'high',
-        'profit_margin': 'high',
-        'base_score': 3.6
-    },
-    {
-        'device': 'Samsung Galaxy Watch 5',
-        'brand': 'Samsung',
-        'category': 'Smartwatch',
-        'market_demand': 'medium',
-        'profit_margin': 'medium',
-        'base_score': 2.9
-    },
-    {
-        'device': 'AirPods Pro 2',
-        'brand': 'Apple',
-        'category': 'Spare Part',
-        'market_demand': 'high',
-        'profit_margin': 'high',
-        'base_score': 3.5
-    },
-    {
-        'device': 'MacBook Charger (USB-C)',
-        'brand': 'Apple',
-        'category': 'Spare Part',
-        'market_demand': 'high',
-        'profit_margin': 'medium',
-        'base_score': 3.8
-    },
-    {
-        'device': 'iPhone Screen Replacement Kit',
-        'brand': 'Generic',
-        'category': 'Spare Part',
-        'market_demand': 'high',
-        'profit_margin': 'high',
-        'base_score': 4.0
-    }
-]
+MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
+MODEL_ARTIFACT = MODEL_DIR / "inventory_recommender_model.json"
+
+
+def _to_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _to_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _parse_datetime(value: Any) -> Optional[datetime]:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    return None
+
+
+def _get_category_name(raw_category: Any) -> str:
+    if isinstance(raw_category, dict):
+        return str(raw_category.get("name") or "Unknown")
+    if isinstance(raw_category, str) and raw_category.strip():
+        return raw_category.strip()
+    return "Unknown"
+
+
+def _extract_brand(product_name: str) -> str:
+    known_brands = ["Apple", "Samsung", "Dell", "HP", "Lenovo", "Asus", "Acer", "Microsoft", "Google", "Huawei"]
+    upper_name = (product_name or "").upper()
+    for brand in known_brands:
+        if brand.upper() in upper_name:
+            return brand
+    return "Generic"
 
 
 def fetch_sales_from_system_backend(days: int = 60) -> List[Dict]:
@@ -149,8 +82,8 @@ def fetch_sales_from_system_backend(days: int = 60) -> List[Dict]:
             
             for sale in all_sales:
                 if sale.get('createdAt'):
-                    sale_date = datetime.fromisoformat(sale['createdAt'].replace('Z', '+00:00'))
-                    if sale_date >= cutoff_date:
+                    sale_date = _parse_datetime(sale.get("createdAt"))
+                    if sale_date and sale_date >= cutoff_date:
                         recent_sales.append(sale)
             
             return recent_sales
@@ -172,321 +105,278 @@ def fetch_inventory_from_system_backend() -> List[Dict]:
         return []
 
 
-def analyze_sales_trends(sales_data: List[Dict]) -> Dict[str, Any]:
-    """Analyze sales trends from recent sales data"""
-    if not sales_data:
-        return {
-            'top_categories': {},
-            'top_brands': {},
-            'top_products': {},
-            'total_recent_sales': 0,
-            'total_revenue': 0,
-            'avg_sale_value': 0
-        }
-    
-    categories = Counter()
-    brands = Counter()
-    products = Counter()
-    total_revenue = 0
-    
-    for sale in sales_data:
-        if not sale:
-            continue
-        items = sale.get('items', [])
-        for item in items:
-            if not item:
-                continue
-            quantity = item.get('quantity', 1)
-            category = item.get('category', 'Unknown')
-            brand = extract_brand(item.get('name', ''))
-            product_name = item.get('name', 'Unknown')
-            price = float(item.get('price', 0))
-            
-            categories[category] += quantity
-            brands[brand] += quantity
-            products[product_name] += quantity
-            total_revenue += price * quantity
-    
+def _normalize_inventory_item(item: Dict[str, Any]) -> Dict[str, Any]:
+    name = str(item.get("name") or "Unknown Device")
+    category = _get_category_name(item.get("category"))
     return {
-        'top_categories': dict(categories.most_common(10)),
-        'top_brands': dict(brands.most_common(10)),
-        'top_products': dict(products.most_common(10)),
-        'total_recent_sales': len(sales_data),
-        'total_revenue': round(total_revenue, 2),
-        'avg_sale_value': round(total_revenue / len(sales_data), 2) if sales_data else 0
+        "id": item.get("id"),
+        "name": name,
+        "brand": _extract_brand(name),
+        "category": category,
+        "quantity": _to_int(item.get("quantity"), 0),
+        "reorder_point": _to_int(item.get("reorderPoint"), 0),
+        "price": _to_float(item.get("price"), 0.0),
+        "purchase_cost": _to_float(item.get("purchaseCost"), 0.0),
     }
 
 
-def extract_brand(product_name: str) -> str:
-    """Extract brand from product name"""
-    brands = ['Apple', 'Samsung', 'Dell', 'HP', 'Lenovo', 'Asus', 'Acer', 'Microsoft', 'Google', 'Huawei']
-    product_upper = product_name.upper()
-    
-    for brand in brands:
-        if brand.upper() in product_upper:
-            return brand
-    
-    return 'Generic'
-
-
-def identify_inventory_gaps(sales_data: List[Dict], inventory_data: List[Dict]) -> List[Dict]:
-    """Identify gaps between sales demand and inventory availability"""
-    gaps = []
-    
-    if not sales_data or not inventory_data:
-        return gaps
-    
-    # Build sales frequency map
-    product_sales = defaultdict(int)
-    category_sales = defaultdict(int)
-    brand_sales = defaultdict(int)
-    
+def _normalize_sale_items(sales_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    normalized = []
     for sale in sales_data:
-        if not sale:
-            continue
-        for item in sale.get('items', []):
-            if not item:
+        sale_date = _parse_datetime(sale.get("createdAt"))
+        for raw_item in sale.get("items", []):
+            inv = raw_item.get("inventoryItem") if isinstance(raw_item, dict) else None
+            if inv is None:
                 continue
-            product_id = item.get('id')
-            product_name = item.get('name', '')
-            category = item.get('category', 'Unknown')
-            brand = extract_brand(product_name)
-            quantity = item.get('quantity', 1)
+            name = str(inv.get("name") or "Unknown Device")
+            category = _get_category_name(inv.get("category"))
+            quantity = _to_int(raw_item.get("quantity"), 0)
+            unit_price = _to_float(raw_item.get("unitPrice"), _to_float(inv.get("price"), 0.0))
+            normalized.append(
+                {
+                    "product_id": inv.get("id"),
+                    "name": name,
+                    "brand": _extract_brand(name),
+                    "category": category,
+                    "quantity": max(quantity, 0),
+                    "unit_price": unit_price,
+                    "sale_date": sale_date,
+                }
+            )
+    return normalized
+
+
+def analyze_sales_trends(sales_data: List[Dict]) -> Dict[str, Any]:
+    if not sales_data:
+        return {
+            "top_categories": {},
+            "top_brands": {},
+            "top_products": {},
+            "total_recent_sales": 0,
+            "total_revenue": 0,
+            "avg_sale_value": 0,
+        }
+
+    categories = Counter()
+    brands = Counter()
+    products = Counter()
+    total_revenue = 0.0
+    parsed_items = _normalize_sale_items(sales_data)
+
+    for item in parsed_items:
+        categories[item["category"]] += item["quantity"]
+        brands[item["brand"]] += item["quantity"]
+        products[item["name"]] += item["quantity"]
+        total_revenue += item["unit_price"] * item["quantity"]
+
+    return {
+        "top_categories": dict(categories.most_common(10)),
+        "top_brands": dict(brands.most_common(10)),
+        "top_products": dict(products.most_common(10)),
+        "total_recent_sales": len(sales_data),
+        "total_revenue": round(total_revenue, 2),
+        "avg_sale_value": round(total_revenue / len(sales_data), 2) if sales_data else 0,
+    }
+
+
+def _train_recommendation_model(
+    sales_data: List[Dict[str, Any]],
+    inventory_data: List[Dict[str, Any]],
+    days: int = 60,
+) -> Dict[str, Any]:
+    """Build trained profiles from real sales + inventory and persist them."""
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+    inventory_items = [_normalize_inventory_item(item) for item in inventory_data]
+    inventory_by_id = {item["id"]: item for item in inventory_items if item.get("id") is not None}
+    sale_items = _normalize_sale_items(sales_data)
+
+    product_units_sold = Counter()
+    product_revenue = defaultdict(float)
+    product_sale_days = defaultdict(set)
+
+    for sale_item in sale_items:
+        product_id = sale_item.get("product_id")
+        if product_id is None:
+            continue
+        product_units_sold[product_id] += sale_item["quantity"]
+        product_revenue[product_id] += sale_item["quantity"] * sale_item["unit_price"]
+        if sale_item.get("sale_date"):
+            product_sale_days[product_id].add(sale_item["sale_date"].date().isoformat())
+
+    category_units = Counter()
+    brand_units = Counter()
+    for sale_item in sale_items:
+        category_units[sale_item["category"]] += sale_item["quantity"]
+        brand_units[sale_item["brand"]] += sale_item["quantity"]
+
+    velocity_values = []
+    margin_values = []
+    profiles = []
+
+    for item in inventory_items:
+        pid = item["id"]
+        sold_units = product_units_sold.get(pid, 0)
+        daily_velocity = sold_units / max(days, 1)
+        sale_frequency = len(product_sale_days.get(pid, set())) / max(days, 1)
+        current_stock = item["quantity"]
+        reorder_point = item["reorder_point"]
+        selling_price = item["price"]
+        purchase_cost = item["purchase_cost"]
+        unit_margin = max(selling_price - purchase_cost, 0.0)
+        margin_ratio = (unit_margin / selling_price) if selling_price > 0 else 0.0
+        coverage_days = (current_stock / daily_velocity) if daily_velocity > 0 else 999.0
+
+        # Target stock = 21-day forecast + safety stock (minimum reorder point)
+        forecast_qty = daily_velocity * 21
+        safety_stock = max(reorder_point, math.ceil(daily_velocity * 7))
+        target_stock = max(0, math.ceil(forecast_qty + safety_stock))
+        stock_gap = target_stock - current_stock
+
+        velocity_values.append(daily_velocity)
+        margin_values.append(margin_ratio)
+
+        profiles.append(
+            {
+                "id": pid,
+                "device": item["name"],
+                "brand": item["brand"],
+                "category": item["category"],
+                "current_stock": current_stock,
+                "reorder_point": reorder_point,
+                "units_sold": sold_units,
+                "revenue": round(product_revenue.get(pid, 0.0), 2),
+                "daily_velocity": daily_velocity,
+                "sale_frequency": sale_frequency,
+                "margin_ratio": margin_ratio,
+                "coverage_days": coverage_days,
+                "target_stock": target_stock,
+                "stock_gap": stock_gap,
+                "purchase_cost": purchase_cost,
+            }
+        )
+
+    max_velocity = max(velocity_values) if velocity_values else 1.0
+    max_margin = max(margin_values) if margin_values else 1.0
+    
+    # AI Model Weights (shown as percentages for clarity)
+    weights = {
+        "velocity": 0.45,        # 45% - Sales velocity (how fast items sell)
+        "stock_gap": 0.35,       # 35% - Stock shortage (how much is needed)
+        "sale_frequency": 0.15,  # 15% - Sale frequency (how often sold)
+        "margin": 0.05,          # 5% - Profit margin (profitability)
+    }
+    
+    # Weight percentages for display/documentation
+    weight_percentages = {
+        "velocity": "45%",
+        "stock_gap": "35%",
+        "sale_frequency": "15%",
+        "margin": "5%",
+    }
+
+    # Fit recommendation score from normalized real-data features.
+    for profile in profiles:
+        velocity_component = profile["daily_velocity"] / max(max_velocity, 1e-6)
+        gap_component = max(profile["stock_gap"], 0) / max(profile["target_stock"], 1)
+        frequency_component = min(max(profile["sale_frequency"], 0.0), 1.0)
+        margin_component = profile["margin_ratio"] / max(max_margin, 1e-6) if max_margin > 0 else 0.0
+
+        fitted_score = (
+            weights["velocity"] * velocity_component
+            + weights["stock_gap"] * gap_component
+            + weights["sale_frequency"] * frequency_component
+            + weights["margin"] * margin_component
+        )
+        profile["fitted_score"] = fitted_score
+        profile["recommendation_score"] = round(1.0 + min(fitted_score, 1.0) * 4.0, 1)  # 1..5
+        profile["recommended_quantity"] = max(0, math.ceil(profile["stock_gap"]))
+
+    artifact = {
+        "trained_at": datetime.now().isoformat(),
+        "window_days": days,
+        "system_backend_url": SYSTEM_BACKEND_URL,
+        "feature_weights": weights,
+        "feature_weights_display": weight_percentages,  # Human-readable percentages
+        "feature_scale": {"max_velocity": max_velocity, "max_margin": max_margin},
+        "sales_summary": {
+            "sales_rows": len(sales_data),
+            "sale_items": len(sale_items),
+            "categories": dict(category_units),
+            "brands": dict(brand_units),
+        },
+        "profiles": profiles,
+    }
+
+    MODEL_ARTIFACT.write_text(json.dumps(artifact, indent=2), encoding="utf-8")
+    return artifact
+
+
+def identify_inventory_gaps(model_artifact: Dict[str, Any]) -> List[Dict[str, Any]]:
+    gaps = []
+    for profile in model_artifact.get("profiles", []):
+        stock_gap = _to_int(profile.get("stock_gap"), 0)
+        units_sold = _to_int(profile.get("units_sold"), 0)
+        
+        # Skip if no stock gap OR no sales history (can't recommend items never sold)
+        if stock_gap <= 0 or units_sold == 0:
+            continue
             
-            if product_id:
-                product_sales[product_id] += quantity
-            category_sales[category] += quantity
-            brand_sales[brand] += quantity
-    
-    # Check inventory levels against sales
-    inventory_map = {item['id']: item for item in inventory_data}
-    
-    for product_id, sales_count in product_sales.items():
-        if product_id in inventory_map:
-            inventory_item = inventory_map[product_id]
-            current_stock = inventory_item.get('quantity', 0)
-            product_name = inventory_item.get('name', 'Unknown')
-            
-            # Safely get category name
-            category_obj = inventory_item.get('category')
-            if category_obj and isinstance(category_obj, dict):
-                category_name = category_obj.get('name', 'Unknown')
-            else:
-                category_name = 'Unknown'
-            
-            # High sales but out of stock
-            if current_stock == 0 and sales_count >= 5:
-                gaps.append({
-                    'type': 'out_of_stock',
-                    'product': product_name,
-                    'category': category_name,
-                    'sales_volume': sales_count,
-                    'current_stock': 0,
-                    'priority': 'high'
-                })
-            # High sales but low stock
-            elif current_stock < 5 and sales_count >= 10:
-                gaps.append({
-                    'type': 'low_stock',
-                    'product': product_name,
-                    'category': category_name,
-                    'sales_volume': sales_count,
-                    'current_stock': current_stock,
-                    'priority': 'high'
-                })
-            # Moderate sales but low stock
-            elif current_stock < 3 and sales_count >= 5:
-                gaps.append({
-                    'type': 'low_stock',
-                    'product': product_name,
-                    'category': category_name,
-                    'sales_volume': sales_count,
-                    'current_stock': current_stock,
-                    'priority': 'medium'
-                })
-    
-    # Check for category gaps
-    inventory_categories = Counter()
-    for item in inventory_data:
-        category_obj = item.get('category')
-        if category_obj and isinstance(category_obj, dict):
-            category = category_obj.get('name', 'Unknown')
-        else:
-            category = 'Unknown'
-        inventory_categories[category] += 1
-    
-    for category, sales_count in category_sales.items():
-        current_items = inventory_categories.get(category, 0)
-        if sales_count > 20 and current_items < 3:
-            gaps.append({
-                'type': 'category_gap',
-                'category': category,
-                'sales_volume': sales_count,
-                'current_items': current_items,
-                'priority': 'high'
-            })
-    
-    # Check for brand gaps
-    inventory_brands = Counter()
-    for item in inventory_data:
-        brand = extract_brand(item.get('name', ''))
-        inventory_brands[brand] += 1
-    
-    for brand, sales_count in brand_sales.items():
-        current_items = inventory_brands.get(brand, 0)
-        if sales_count > 15 and current_items < 2:
-            gaps.append({
-                'type': 'brand_gap',
-                'brand': brand,
-                'sales_volume': sales_count,
-                'current_items': current_items,
-                'priority': 'medium'
-            })
-    
+        priority = "high" if stock_gap >= 8 else "medium" if stock_gap >= 4 else "low"
+        gap_type = "out_of_stock" if _to_int(profile.get("current_stock"), 0) == 0 else "low_stock"
+        gaps.append(
+            {
+                "type": gap_type,
+                "product": profile.get("device"),
+                "category": profile.get("category"),
+                "sales_volume": units_sold,
+                "current_stock": _to_int(profile.get("current_stock"), 0),
+                "priority": priority,
+            }
+        )
     return gaps
 
 
-def calculate_device_score(device: Dict, sales_trends: Dict, inventory_data: List[Dict]) -> float:
-    """Calculate recommendation score for a device"""
-    score = device['base_score']
-    
-    # Boost score based on category performance
-    category = device['category']
-    top_categories = sales_trends.get('top_categories', {})
-    if category in top_categories:
-        category_rank = list(top_categories.keys()).index(category) + 1
-        if category_rank == 1:
-            score += 0.8
-        elif category_rank <= 3:
-            score += 0.5
-        elif category_rank <= 5:
-            score += 0.3
-    
-    # Boost score based on brand performance
-    brand = device['brand']
-    top_brands = sales_trends.get('top_brands', {})
-    if brand in top_brands:
-        brand_rank = list(top_brands.keys()).index(brand) + 1
-        if brand_rank == 1:
-            score += 0.6
-        elif brand_rank <= 3:
-            score += 0.4
-        elif brand_rank <= 5:
-            score += 0.2
-    
-    # Check if similar device exists in inventory
-    device_in_inventory = False
-    for item in inventory_data:
-        if device['device'].lower() in item.get('name', '').lower():
-            device_in_inventory = True
-            if item.get('quantity', 0) == 0:
-                score += 0.5  # Boost if out of stock
-            elif item.get('quantity', 0) < 3:
-                score += 0.3  # Boost if low stock
-            break
-    
-    if not device_in_inventory:
-        score += 0.4  # Boost for new products
-    
-    # Market demand adjustment
-    if device['market_demand'] == 'high':
-        score += 0.3
-    elif device['market_demand'] == 'medium':
-        score += 0.1
-    
-    return min(round(score, 1), 5.0)
+def _market_demand_from_profile(profile: Dict[str, Any]) -> str:
+    velocity = _to_float(profile.get("daily_velocity"), 0.0)
+    if velocity >= 1.0:
+        return "high"
+    if velocity >= 0.35:
+        return "medium"
+    return "low"
 
 
-def calculate_recommended_quantity(device: Dict, sales_trends: Dict, inventory_data: List[Dict], score: float) -> int:
-    """Calculate recommended quantity to stock based on sales data and score"""
-    # Base quantity based on score
-    if score >= 4.5:
-        base_qty = 20
-    elif score >= 4.0:
-        base_qty = 15
-    elif score >= 3.5:
-        base_qty = 10
-    elif score >= 3.0:
-        base_qty = 7
-    else:
-        base_qty = 5
-    
-    # Adjust based on category sales volume
-    category = device['category']
-    top_categories = sales_trends.get('top_categories', {})
-    category_sales = top_categories.get(category, 0)
-    
-    if category_sales > 50:
-        base_qty += 10
-    elif category_sales > 30:
-        base_qty += 5
-    elif category_sales > 15:
-        base_qty += 3
-    
-    # Adjust based on brand sales volume
-    brand = device['brand']
-    top_brands = sales_trends.get('top_brands', {})
-    brand_sales = top_brands.get(brand, 0)
-    
-    if brand_sales > 50:
-        base_qty += 5
-    elif brand_sales > 30:
-        base_qty += 3
-    
-    # Check current inventory
-    for item in inventory_data:
-        if device['device'].lower() in item.get('name', '').lower():
-            current_qty = item.get('quantity', 0)
-            if current_qty == 0:
-                # Out of stock - recommend more
-                base_qty += 5
-            elif current_qty < 5:
-                # Low stock - recommend moderate amount
-                base_qty += 3
-            break
-    
-    # Category-specific adjustments
-    if category == 'Spare Part':
-        base_qty = int(base_qty * 1.5)  # Spare parts need more stock
-    elif category == 'Laptop':
-        base_qty = max(5, int(base_qty * 0.7))  # Laptops need less stock (expensive)
-    
-    return min(base_qty, 50)  # Cap at 50 units
+def _profit_margin_from_profile(profile: Dict[str, Any]) -> str:
+    margin_ratio = _to_float(profile.get("margin_ratio"), 0.0)
+    if margin_ratio >= 0.25:
+        return "high"
+    if margin_ratio >= 0.10:
+        return "medium"
+    return "low"
 
 
-def generate_recommendation_reason(device: Dict, score: float, sales_trends: Dict) -> str:
-    """Generate human-readable reason for recommendation"""
+def generate_recommendation_reason(profile: Dict[str, Any]) -> str:
     reasons = []
-    
-    category = device['category']
-    brand = device['brand']
-    
-    # Category performance
-    top_categories = sales_trends.get('top_categories', {})
-    if category in list(top_categories.keys())[:3]:
-        reasons.append(f"{category} is a top-selling category")
-    
-    # Brand performance
-    top_brands = sales_trends.get('top_brands', {})
-    if brand in list(top_brands.keys())[:3]:
-        reasons.append(f"{brand} products are in high demand")
-    
-    # Market demand
-    if device['market_demand'] == 'high':
-        reasons.append("high market demand")
-    
-    # Profit margin
-    if device['profit_margin'] == 'high':
-        reasons.append("excellent profit margins")
-    
+    stock_gap = _to_int(profile.get("stock_gap"), 0)
+    velocity = _to_float(profile.get("daily_velocity"), 0.0)
+    current_stock = _to_int(profile.get("current_stock"), 0)
+    units_sold = _to_int(profile.get("units_sold"), 0)
+
+    if current_stock == 0:
+        reasons.append("currently out of stock")
+    elif stock_gap > 0:
+        reasons.append(f"stock below target by {stock_gap} units")
+    if velocity > 0:
+        reasons.append(f"sales velocity is {velocity:.2f} units/day")
+    if units_sold > 0:
+        reasons.append(f"{units_sold} units sold in recent period")
     if not reasons:
-        reasons.append("solid market performer with good potential")
-    
-    return f"Recommended because: {', '.join(reasons)}."
+        reasons.append("insufficient stock coverage for projected demand")
+
+    return "Recommended because " + ", ".join(reasons) + "."
 
 
 def generate_insights(sales_trends: Dict, inventory_gaps: List[Dict], recommendations: List[Dict]) -> List[str]:
-    """Generate actionable AI insights"""
     insights = []
     
     # Top category insight
@@ -534,78 +424,89 @@ def generate_insights(sales_trends: Dict, inventory_gaps: List[Dict], recommenda
             f"This device aligns perfectly with current market trends."
         )
     
-    # General market insight
-    insights.append(
-        "📊 Market analysis shows strong demand for smartphones and laptops. "
-        "Premium and mid-range devices offer the best profit margins."
-    )
+    if recommendations:
+        avg_score = round(sum(_to_float(r.get("recommendation_score"), 0.0) for r in recommendations) / len(recommendations), 2)
+        insights.append(f"🧠 Model confidence average score is {avg_score}/5 across recommended items.")
     
     return insights
 
 
 @router.get("/inventory-recommendations")
 async def get_inventory_recommendations():
-    """Main endpoint for AI inventory recommendations"""
+    """Main endpoint for trained real-data inventory recommendations."""
     try:
-        # Fetch data from System Backend
         sales_data = fetch_sales_from_system_backend(days=60)
         inventory_data = fetch_inventory_from_system_backend()
-        
-        # Check if we have data
-        if not sales_data:
-            print("Warning: No sales data available from System Backend")
+
         if not inventory_data:
-            print("Warning: No inventory data available from System Backend")
-        
-        # Analyze sales trends
-        sales_trends = analyze_sales_trends(sales_data)
-        
-        # Identify inventory gaps
-        inventory_gaps = identify_inventory_gaps(sales_data, inventory_data)
-        
-        # Generate device recommendations
-        recommendations = []
-        for device in DEVICE_CATALOG:
-            score = calculate_device_score(device, sales_trends, inventory_data)
-            if score >= 2.5:  # Only recommend devices with decent scores
-                recommended_qty = calculate_recommended_quantity(device, sales_trends, inventory_data, score)
-                recommendations.append({
-                    **device,
-                    'recommendation_score': score,
-                    'recommended_quantity': recommended_qty,
-                    'reason': generate_recommendation_reason(device, score, sales_trends)
-                })
-        
-        # Sort by score (highest first)
-        recommendations.sort(key=lambda x: x['recommendation_score'], reverse=True)
-        
-        # Take top 10
-        top_recommendations = recommendations[:10]
-        
-        # Generate AI insights
-        insights = generate_insights(sales_trends, inventory_gaps, top_recommendations)
-        
-        # Add system status message
-        system_status = {
-            'java_backend_connected': len(sales_data) > 0 or len(inventory_data) > 0,
-            'sales_data_available': len(sales_data) > 0,
-            'inventory_data_available': len(inventory_data) > 0,
-            'message': 'Using real data from System Backend' if (sales_data or inventory_data) else 'No data from System Backend - showing catalog-based recommendations'
-        }
-        
-        return {
-            'success': True,
-            'data': {
-                'recommendations': top_recommendations,
-                'sales_trends': sales_trends,
-                'inventory_gaps': inventory_gaps,
-                'insights': insights,
-                'analysis_date': datetime.now().isoformat(),
-                'total_recommendations': len(top_recommendations),
-                'system_status': system_status
+            return {
+                "success": True,
+                "data": {
+                    "recommendations": [],
+                    "sales_trends": analyze_sales_trends([]),
+                    "inventory_gaps": [],
+                    "insights": ["No inventory data available from system backend."],
+                    "analysis_date": datetime.now().isoformat(),
+                    "total_recommendations": 0,
+                    "system_status": {
+                        "java_backend_connected": False,
+                        "sales_data_available": len(sales_data) > 0,
+                        "inventory_data_available": False,
+                        "message": "Inventory endpoint returned no data. Recommendations skipped.",
+                    },
+                },
             }
+
+        # Train model from real data and persist artifact.
+        model_artifact = _train_recommendation_model(sales_data, inventory_data, days=60)
+        sales_trends = analyze_sales_trends(sales_data)
+        inventory_gaps = identify_inventory_gaps(model_artifact)
+
+        # Recommend only items where stock gap > 0 and there is actual demand.
+        trained_profiles = model_artifact.get("profiles", [])
+        real_recommendations = []
+        for profile in trained_profiles:
+            if _to_int(profile.get("recommended_quantity"), 0) <= 0:
+                continue
+            if _to_int(profile.get("units_sold"), 0) <= 0:
+                continue
+            real_recommendations.append(
+                {
+                    "device": profile.get("device"),
+                    "brand": profile.get("brand"),
+                    "category": profile.get("category"),
+                    "market_demand": _market_demand_from_profile(profile),
+                    "profit_margin": _profit_margin_from_profile(profile),
+                    "recommendation_score": profile.get("recommendation_score"),
+                    "recommended_quantity": profile.get("recommended_quantity"),
+                    "reason": generate_recommendation_reason(profile),
+                }
+            )
+
+        real_recommendations.sort(key=lambda x: (_to_float(x.get("recommendation_score"), 0.0), _to_int(x.get("recommended_quantity"), 0)), reverse=True)
+        top_recommendations = real_recommendations[:10]
+        insights = generate_insights(sales_trends, inventory_gaps, top_recommendations)
+
+        system_status = {
+            "java_backend_connected": True,
+            "sales_data_available": len(sales_data) > 0,
+            "inventory_data_available": len(inventory_data) > 0,
+            "model_artifact": str(MODEL_ARTIFACT),
+            "message": "Using trained model from real sales and inventory data.",
         }
-        
+
+        return {
+            "success": True,
+            "data": {
+                "recommendations": top_recommendations,
+                "sales_trends": sales_trends,
+                "inventory_gaps": inventory_gaps,
+                "insights": insights,
+                "analysis_date": datetime.now().isoformat(),
+                "total_recommendations": len(top_recommendations),
+                "system_status": system_status,
+            },
+        }
     except Exception as e:
         print(f"Error generating recommendations: {e}")
         import traceback
@@ -615,15 +516,499 @@ async def get_inventory_recommendations():
             detail={
                 'success': False,
                 'error': str(e),
-                'message': 'Failed to generate inventory recommendations. Make sure Java backend is running on port 8080.'
+                'message': 'Failed to generate inventory recommendations. Ensure Java backend is running and sales/inventory data is accessible.'
             }
         )
 
 
 @router.post("/inventory-recommendations/refresh")
 async def refresh_recommendations():
-    """Force refresh of recommendations"""
+    """Force refresh of recommendations (retrain on latest data)."""
     return await get_inventory_recommendations()
+
+
+@router.post("/inventory-recommendations/train")
+async def train_recommendation_model():
+    """Explicit model training endpoint to create persisted artifact."""
+    try:
+        sales_data = fetch_sales_from_system_backend(days=60)
+        inventory_data = fetch_inventory_from_system_backend()
+        if not inventory_data:
+            raise HTTPException(status_code=400, detail="No inventory data available for training.")
+
+        artifact = _train_recommendation_model(sales_data, inventory_data, days=60)
+        return {
+            "success": True,
+            "message": "Model trained successfully from real system data.",
+            "trained_at": artifact.get("trained_at"),
+            "profiles": len(artifact.get("profiles", [])),
+            "artifact_path": str(MODEL_ARTIFACT),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/inventory-recommendations/guided")
+async def get_guided_recommendations(user_id: int = None):
+    """
+    Enhanced endpoint for guided step-through recommendation flow
+    Returns recommendations grouped by priority with detailed reasons
+    Includes customer demand recommendations
+    """
+    try:
+        sales_data = fetch_sales_from_system_backend(days=60)
+        inventory_data = fetch_inventory_from_system_backend()
+        
+        # Fetch user data for personalization
+        user_name = "User"
+        if user_id:
+            try:
+                user_response = requests.get(f'{SYSTEM_BACKEND_URL}/api/users/{user_id}', timeout=5)
+                if user_response.status_code == 200:
+                    user_data = user_response.json()
+                    user_name = user_data.get('fullName', 'User')
+            except Exception as e:
+                print(f"Error fetching user data: {e}")
+
+        if not inventory_data:
+            return {
+                "success": True,
+                "user": {"name": user_name},
+                "summary": {
+                    "high_priority_count": 0,
+                    "medium_priority_count": 0,
+                    "low_priority_count": 0,
+                    "total_count": 0,
+                    "customer_demand_count": 0
+                },
+                "recommendations": {
+                    "high": [],
+                    "medium": [],
+                    "low": []
+                },
+                "message": "No inventory data available",
+                "analysis_date": datetime.now().isoformat()
+            }
+
+        # Train model and generate recommendations
+        model_artifact = _train_recommendation_model(sales_data, inventory_data, days=60)
+        sales_trends = analyze_sales_trends(sales_data)
+        
+        # Generate detailed recommendations from sales data
+        trained_profiles = model_artifact.get("profiles", [])
+        all_recommendations = []
+        
+        for profile in trained_profiles:
+            if _to_int(profile.get("recommended_quantity"), 0) <= 0:
+                continue
+            if _to_int(profile.get("units_sold"), 0) <= 0:
+                continue
+            
+            # Generate detailed reason with bullet points
+            reason_details = _generate_detailed_reason(profile, sales_trends)
+            
+            recommendation = {
+                "product_id": profile.get("id"),
+                "product_name": profile.get("device"),
+                "brand": profile.get("brand"),
+                "category": profile.get("category"),
+                "current_stock": _to_int(profile.get("current_stock"), 0),
+                "recommended_quantity": profile.get("recommended_quantity"),
+                "recommendation_score": profile.get("recommendation_score"),
+                "market_demand": _market_demand_from_profile(profile),
+                "profit_margin": _profit_margin_from_profile(profile),
+                "purchase_cost": _to_float(profile.get("purchase_cost"), 0.0),
+                "reason": {
+                    "summary": reason_details["summary"],
+                    "details": reason_details["details"],
+                    "urgency": reason_details["urgency"]
+                },
+                "metrics": {
+                    "units_sold_60d": _to_int(profile.get("units_sold"), 0),
+                    "daily_velocity": round(_to_float(profile.get("daily_velocity"), 0.0), 2),
+                    "stock_coverage_days": round(_to_float(profile.get("coverage_days"), 0.0), 1),
+                    "revenue_generated": round(_to_float(profile.get("revenue"), 0.0), 2),
+                    "profit_margin_percent": round(_to_float(profile.get("margin_ratio"), 0.0) * 100, 1)
+                },
+                "confidence": {
+                    "score": profile.get("recommendation_score"),
+                    "level": _get_confidence_level(profile.get("recommendation_score"))
+                },
+                "source": "sales_analysis"
+            }
+            all_recommendations.append(recommendation)
+        
+        # Add customer demand recommendations
+        customer_demand_recs = analyze_customer_demand(threshold=5)
+        customer_demand_count = 0
+        
+        for demand_rec in customer_demand_recs:
+            # Format customer demand recommendation to match structure
+            customer_demand_count += 1
+            recommendation = {
+                "product_id": None,  # New product, no ID yet
+                "product_name": demand_rec.get("device"),
+                "brand": demand_rec.get("brand"),
+                "category": demand_rec.get("category"),
+                "current_stock": 0,  # Not in inventory yet
+                "recommended_quantity": demand_rec.get("recommended_quantity"),
+                "recommendation_score": demand_rec.get("recommendation_score"),
+                "market_demand": demand_rec.get("market_demand"),
+                "profit_margin": demand_rec.get("profit_margin"),
+                "purchase_cost": 0.0,  # Unknown for new products
+                "reason": {
+                    "summary": demand_rec.get("reason"),
+                    "details": [
+                        f"Requested by {demand_rec.get('request_count')} customers",
+                        "Not currently in catalog or stock",
+                        f"First request: {demand_rec.get('first_request', 'N/A')}",
+                        f"Latest request: {demand_rec.get('last_request', 'N/A')}",
+                        "High customer interest indicates future demand"
+                    ],
+                    "urgency": "high"
+                },
+                "metrics": {
+                    "customer_requests": demand_rec.get("request_count"),
+                    "first_request_date": demand_rec.get("first_request"),
+                    "last_request_date": demand_rec.get("last_request")
+                },
+                "confidence": {
+                    "score": demand_rec.get("recommendation_score"),
+                    "level": _get_confidence_level(demand_rec.get("recommendation_score"))
+                },
+                "source": "customer_demand",
+                "badge": "Customer Requested"
+            }
+            all_recommendations.append(recommendation)
+        
+        # Sort by score
+        all_recommendations.sort(
+            key=lambda x: (_to_float(x.get("recommendation_score"), 0.0), _to_int(x.get("recommended_quantity"), 0)),
+            reverse=True
+        )
+        
+        # Group by priority (customer demand always goes to high priority)
+        high_priority = [r for r in all_recommendations if r['recommendation_score'] >= 4.0 or r.get('source') == 'customer_demand']
+        medium_priority = [r for r in all_recommendations if 3.0 <= r['recommendation_score'] < 4.0 and r.get('source') != 'customer_demand']
+        low_priority = [r for r in all_recommendations if 2.0 <= r['recommendation_score'] < 3.0 and r.get('source') != 'customer_demand']
+        
+        return {
+            "success": True,
+            "user": {
+                "name": user_name
+            },
+            "summary": {
+                "high_priority_count": len(high_priority),
+                "medium_priority_count": len(medium_priority),
+                "low_priority_count": len(low_priority),
+                "total_count": len(all_recommendations),
+                "customer_demand_count": customer_demand_count
+            },
+            "recommendations": {
+                "high": high_priority,
+                "medium": medium_priority,
+                "low": low_priority
+            },
+            "sales_trends": sales_trends,
+            "analysis_date": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"Error generating guided recommendations: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail={
+                'success': False,
+                'error': str(e),
+                'message': 'Failed to generate guided recommendations.'
+            }
+        )
+
+
+def _generate_detailed_reason(profile: Dict[str, Any], sales_trends: Dict) -> Dict[str, Any]:
+    """Generate detailed, data-driven reason with bullet points"""
+    details = []
+    stock_gap = _to_int(profile.get("stock_gap"), 0)
+    velocity = _to_float(profile.get("daily_velocity"), 0.0)
+    current_stock = _to_int(profile.get("current_stock"), 0)
+    units_sold = _to_int(profile.get("units_sold"), 0)
+    coverage_days = _to_float(profile.get("coverage_days"), 0.0)
+    margin_ratio = _to_float(profile.get("margin_ratio"), 0.0)
+    
+    # Stock status
+    if current_stock == 0:
+        summary = "Critical: Currently out of stock with active demand"
+        urgency = "critical"
+        details.append("Currently out of stock")
+    elif coverage_days < 3:
+        summary = f"Urgent: Only {coverage_days:.1f} days of stock remaining"
+        urgency = "high"
+        details.append(f"Only {coverage_days:.1f} days of stock remaining")
+    elif coverage_days < 7:
+        summary = f"Low stock: {coverage_days:.1f} days coverage remaining"
+        urgency = "medium"
+        details.append(f"Stock coverage: {coverage_days:.1f} days")
+    else:
+        summary = "Preventive restocking recommended"
+        urgency = "low"
+        details.append(f"Current stock: {current_stock} units")
+    
+    # Sales performance
+    if velocity > 0:
+        details.append(f"Sales velocity: {velocity:.2f} units/day")
+    if units_sold > 0:
+        details.append(f"{units_sold} units sold in last 60 days")
+    
+    # Stock gap
+    if stock_gap > 0:
+        details.append(f"Stock below target by {stock_gap} units")
+    
+    # Financial impact
+    if margin_ratio > 0:
+        margin_percent = margin_ratio * 100
+        if margin_percent >= 25:
+            details.append(f"High profit margin ({margin_percent:.0f}%)")
+        elif margin_percent >= 10:
+            details.append(f"Moderate profit margin ({margin_percent:.0f}%)")
+    
+    # Category/Brand ranking
+    category = profile.get("category", "")
+    brand = profile.get("brand", "")
+    top_categories = sales_trends.get("top_categories", {})
+    top_brands = sales_trends.get("top_brands", {})
+    
+    if category in list(top_categories.keys())[:3]:
+        details.append(f"Top-selling category: {category}")
+    if brand in list(top_brands.keys())[:3]:
+        details.append(f"Top-performing brand: {brand}")
+    
+    return {
+        "summary": summary,
+        "details": details,
+        "urgency": urgency
+    }
+
+
+def _get_confidence_level(score: float) -> str:
+    """Get confidence level from score"""
+    score = _to_float(score, 0.0)
+    if score >= 4.5:
+        return "very_high"
+    elif score >= 4.0:
+        return "high"
+    elif score >= 3.0:
+        return "medium"
+    else:
+        return "low"
+
+
+@router.get("/inventory-recommendations/demo")
+async def get_demo_recommendations():
+    """
+    Demo endpoint with realistic mock data for supervisor presentation
+    Shows how AI recommendations work without needing real sales data
+    """
+    from datetime import datetime
+    
+    mock_recommendations = {
+        "success": True,
+        "data": {
+            "recommendations": [
+                {
+                    "device": "iPhone 13 Pro Battery",
+                    "brand": "Apple",
+                    "category": "Batteries",
+                    "market_demand": "high",
+                    "profit_margin": "high",
+                    "recommendation_score": 4.8,
+                    "recommended_quantity": 15,
+                    "reason": "Recommended because strong increasing demand trend (+28.5%), stock below target by 15 units, predicted demand: 45 units in 30 days."
+                },
+                {
+                    "device": "Samsung Galaxy S21 Display Assembly",
+                    "brand": "Samsung",
+                    "category": "Screens",
+                    "market_demand": "high",
+                    "profit_margin": "high",
+                    "recommendation_score": 4.6,
+                    "recommended_quantity": 12,
+                    "reason": "Recommended because moderate increasing demand trend (+18.2%), stock below target by 12 units, predicted demand: 38 units in 30 days."
+                },
+                {
+                    "device": "iPhone 12 Charging Port Flex Cable",
+                    "brand": "Apple",
+                    "category": "Charging Ports",
+                    "market_demand": "high",
+                    "profit_margin": "medium",
+                    "recommendation_score": 4.4,
+                    "recommended_quantity": 20,
+                    "reason": "Recommended because strong increasing demand trend (+32.1%), only 8 days of stock remaining, predicted demand: 52 units in 30 days."
+                },
+                {
+                    "device": "Dell Latitude Thermal Paste",
+                    "brand": "Dell",
+                    "category": "Cooling",
+                    "market_demand": "medium",
+                    "profit_margin": "medium",
+                    "recommendation_score": 4.2,
+                    "recommended_quantity": 25,
+                    "reason": "Recommended because moderate increasing demand trend (+15.3%), stock below target by 25 units, predicted demand: 35 units in 30 days."
+                },
+                {
+                    "device": "MacBook Pro M1 SSD 512GB",
+                    "brand": "Apple",
+                    "category": "Storage",
+                    "market_demand": "high",
+                    "profit_margin": "high",
+                    "recommendation_score": 4.1,
+                    "recommended_quantity": 8,
+                    "reason": "Recommended because strong increasing demand trend (+25.7%), stock below target by 8 units, predicted demand: 22 units in 30 days."
+                },
+                {
+                    "device": "HP EliteBook LVDS Cable",
+                    "brand": "HP",
+                    "category": "Display Cables",
+                    "market_demand": "medium",
+                    "profit_margin": "medium",
+                    "recommendation_score": 3.9,
+                    "recommended_quantity": 10,
+                    "reason": "Recommended because moderate increasing demand trend (+12.8%), only 11 days of stock remaining, predicted demand: 18 units in 30 days."
+                },
+                {
+                    "device": "Samsung Galaxy A52 Camera Module",
+                    "brand": "Samsung",
+                    "category": "Cameras",
+                    "market_demand": "medium",
+                    "profit_margin": "high",
+                    "recommendation_score": 3.7,
+                    "recommended_quantity": 6,
+                    "reason": "Recommended because moderate increasing demand trend (+14.5%), stock below target by 6 units, predicted demand: 15 units in 30 days."
+                },
+                {
+                    "device": "ThinkPad X1 Carbon Keyboard",
+                    "brand": "Lenovo",
+                    "category": "Keyboards",
+                    "market_demand": "medium",
+                    "profit_margin": "medium",
+                    "recommendation_score": 3.5,
+                    "recommended_quantity": 5,
+                    "reason": "Recommended because stable demand trend (+5.2%), stock below target by 5 units, predicted demand: 12 units in 30 days."
+                },
+                {
+                    "device": "iPad Air 4 Digitizer",
+                    "brand": "Apple",
+                    "category": "Screens",
+                    "market_demand": "medium",
+                    "profit_margin": "high",
+                    "recommendation_score": 3.4,
+                    "recommended_quantity": 4,
+                    "reason": "Recommended because moderate increasing demand trend (+10.3%), stock below target by 4 units, predicted demand: 9 units in 30 days."
+                },
+                {
+                    "device": "iPhone XR Earpiece Speaker",
+                    "brand": "Apple",
+                    "category": "Audio",
+                    "market_demand": "low",
+                    "profit_margin": "medium",
+                    "recommendation_score": 3.2,
+                    "recommended_quantity": 8,
+                    "reason": "Recommended because stable demand trend (+3.8%), stock below target by 8 units, predicted demand: 14 units in 30 days."
+                }
+            ],
+            "sales_trends": {
+                "top_categories": {
+                    "Batteries": 145,
+                    "Screens": 128,
+                    "Charging Ports": 98,
+                    "Storage": 76,
+                    "Cameras": 54
+                },
+                "top_brands": {
+                    "Apple": 312,
+                    "Samsung": 198,
+                    "Dell": 87,
+                    "HP": 65,
+                    "Lenovo": 43
+                },
+                "top_products": {
+                    "iPhone 13 Pro Battery": 45,
+                    "Samsung Galaxy S21 Display": 38,
+                    "iPhone 12 Charging Port": 32,
+                    "MacBook Pro SSD": 28,
+                    "Dell Thermal Paste": 25
+                },
+                "total_recent_sales": 156,
+                "total_revenue": 45750000,
+                "avg_sale_value": 293269
+            },
+            "inventory_gaps": [
+                {
+                    "type": "low_stock",
+                    "product": "iPhone 13 Pro Battery",
+                    "category": "Batteries",
+                    "sales_volume": 45,
+                    "current_stock": 5,
+                    "priority": "high"
+                },
+                {
+                    "type": "low_stock",
+                    "product": "Samsung Galaxy S21 Display Assembly",
+                    "category": "Screens",
+                    "sales_volume": 38,
+                    "current_stock": 3,
+                    "priority": "high"
+                },
+                {
+                    "type": "out_of_stock",
+                    "product": "iPhone 12 Charging Port Flex Cable",
+                    "category": "Charging Ports",
+                    "sales_volume": 32,
+                    "current_stock": 0,
+                    "priority": "high"
+                },
+                {
+                    "type": "low_stock",
+                    "product": "Dell Latitude Thermal Paste",
+                    "category": "Cooling",
+                    "sales_volume": 25,
+                    "current_stock": 2,
+                    "priority": "medium"
+                },
+                {
+                    "type": "low_stock",
+                    "product": "MacBook Pro M1 SSD 512GB",
+                    "category": "Storage",
+                    "sales_volume": 22,
+                    "current_stock": 1,
+                    "priority": "medium"
+                }
+            ],
+            "insights": [
+                "📱 Batteries is your best-selling category with 145 units sold. Consider expanding this inventory line.",
+                "⭐ Apple is your top-performing brand with 312 units sold. Stock more Apple devices to meet demand.",
+                "⚠️ You have 3 high-priority inventory gaps. Address these immediately to avoid lost sales.",
+                "💰 Recent sales generated 45,750,000 RWF with an average sale value of 293,269 RWF. Focus on mid-to-high value items for better margins.",
+                "🎯 Top recommendation: iPhone 13 Pro Battery (Score: 4.8/5.0). This device aligns perfectly with current market trends.",
+                "🧠 Model confidence average score is 4.0/5 across recommended items.",
+                "📈 Strong growth detected: iPhone 13 Pro Battery (+28.5%), iPhone 12 Charging Port (+32.1%), MacBook Pro SSD (+25.7%). Stock these items urgently."
+            ],
+            "analysis_date": datetime.now().isoformat(),
+            "total_recommendations": 10,
+            "system_status": {
+                "java_backend_connected": True,
+                "sales_data_available": True,
+                "inventory_data_available": True,
+                "model_artifact": "demo_mode",
+                "message": "Demo mode: Using realistic mock data for presentation"
+            }
+        }
+    }
+    
+    return mock_recommendations
 
 
 @router.get("/test-connection")
