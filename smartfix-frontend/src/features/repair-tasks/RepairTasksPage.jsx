@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
 import { CheckCircle, Clock3, AlertTriangle, ClipboardList } from 'lucide-react';
@@ -6,6 +7,7 @@ import { PageHeader } from '../../shared/components/Common/PageHeader';
 import { LoadingState } from '../../shared/components/Common/LoadingState';
 import { EmptyState } from '../../shared/components/Common/EmptyState';
 import { StatCard } from '../../shared/components/Common/StatCard';
+import { RepairCompletionModal } from './components/RepairCompletionModal';
 
 const LOCAL_TASKS_KEY = 'technician_repair_tasks';
 
@@ -15,10 +17,13 @@ export const RepairTasksPage = () => {
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [updatingTaskId, setUpdatingTaskId] = useState(null);
   const [startingTaskId, setStartingTaskId] = useState(null);
   const [escalatingTaskId, setEscalatingTaskId] = useState(null);
   const [escalationNotes, setEscalationNotes] = useState({});
+  
+  // Completion modal state
+  const [completingTask, setCompletingTask] = useState(null);
+  const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
 
   const loadTasks = async () => {
     try {
@@ -26,7 +31,7 @@ export const RepairTasksPage = () => {
       if (!response.ok) throw new Error();
       const data = await response.json();
       const normalized = Array.isArray(data) ? data : [];
-      const myTasks = user?.id
+      const myTasks = (user?.id && user?.role !== 'admin')
         ? normalized.filter((t) => t.assignedTechnician?.id === user.id)
         : normalized;
       setTasks(myTasks);
@@ -45,16 +50,6 @@ export const RepairTasksPage = () => {
   const inProgressCount = useMemo(() => tasks.filter((t) => normalize(t.status) === 'IN_PROGRESS').length, [tasks]);
   const completedCount  = useMemo(() => tasks.filter((t) => normalize(t.status) === 'COMPLETED').length, [tasks]);
   const activeTasks     = useMemo(() => tasks.filter((t) => normalize(t.status) !== 'COMPLETED'), [tasks]);
-
-  const completeTaskLocally = (taskId) => {
-    const updated = tasks.map((task) =>
-      String(task.id) === String(taskId)
-        ? { ...task, status: 'completed', completedAt: new Date().toISOString() }
-        : task
-    );
-    setTasks(updated);
-    localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(updated));
-  };
 
   const handleStartWork = async (taskId) => {
     setStartingTaskId(taskId);
@@ -99,22 +94,27 @@ export const RepairTasksPage = () => {
     }
   };
 
-  const handleApproveComplete = async (taskId) => {
-    setUpdatingTaskId(taskId);
+  const handleApproveComplete = async (completionData) => {
+    setIsSubmittingCompletion(true);
     try {
-      const res = await fetch(`${SYSTEM_BACKEND_BASE_URL}/api/repair-tasks/${taskId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'COMPLETED' })
-      });
+      const res = await fetch(
+        `${SYSTEM_BACKEND_BASE_URL}/api/repair-tasks/${completingTask.id}/complete`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(completionData)
+        }
+      );
+      
       if (!res.ok) throw new Error();
-      toast.success('Task approved as completed!');
+      
+      toast.success('✅ Repair completed! Knowledge captured for AI learning.');
+      setCompletingTask(null);
       await loadTasks();
     } catch {
-      completeTaskLocally(taskId);
-      toast.success('Task completed (local mode).');
+      toast.error('Failed to complete repair. Please try again.');
     } finally {
-      setUpdatingTaskId(null);
+      setIsSubmittingCompletion(false);
     }
   };
 
@@ -165,6 +165,12 @@ export const RepairTasksPage = () => {
                     <p className="text-xs text-blue-600 mt-1">Assigned to: {task.assignedTechnician.fullName}</p>
                   )}
                   <p className="text-xs text-gray-400 mt-1">Task #{task.id}</p>
+                  <Link
+                    to={`/diagnosis?ticketId=${task.id}`}
+                    className="inline-block mt-2 text-xs font-semibold text-blue-600 hover:text-blue-800"
+                  >
+                    Open technician assist for this ticket
+                  </Link>
                 </div>
 
                 <div className="flex flex-col gap-2 min-w-[190px]">
@@ -188,11 +194,10 @@ export const RepairTasksPage = () => {
                     <div className="flex flex-col gap-2">
                       <button
                         type="button"
-                        disabled={updatingTaskId === task.id}
-                        onClick={() => handleApproveComplete(task.id)}
-                        className="px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:bg-gray-400"
+                        onClick={() => setCompletingTask(task)}
+                        className="px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700"
                       >
-                        {updatingTaskId === task.id ? 'Saving...' : 'Approve Complete'}
+                        Complete Repair
                       </button>
 
                       {escalationNotes[task.id] === undefined ? (
@@ -239,6 +244,16 @@ export const RepairTasksPage = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Repair Completion Modal */}
+      {completingTask && (
+        <RepairCompletionModal
+          task={completingTask}
+          onClose={() => setCompletingTask(null)}
+          onSubmit={handleApproveComplete}
+          isSubmitting={isSubmittingCompletion}
+        />
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 // src/features/sales/SalesPage.jsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { ShoppingCart, Search, Plus, Minus, Trash2, Printer, DollarSign, TrendingUp, UserRound, Wrench, Share2, Mail, MessageCircle, Copy, FileText } from 'lucide-react';
+import { ShoppingCart, Search, Plus, Minus, Trash2, Printer, Banknote, TrendingUp, UserRound, Wrench, Share2, Mail, MessageCircle, Copy, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -63,7 +63,7 @@ export const SalesPage = () => {
           id: item.id,
           name: item.name,
           price: Number(item.price),
-          category: item.category,
+          category: item.category?.name || item.category || 'N/A',
           stock: item.quantity
         })));
       }
@@ -179,7 +179,7 @@ export const SalesPage = () => {
 
   const mapProductToSalesCategory = (product) => {
     const name = String(product?.name || '').toLowerCase();
-    const category = String(product?.category || '').toLowerCase();
+    const category = String(product?.category?.name || product?.category || '').toLowerCase();
     const combined = `${name} ${category}`;
 
     if (isSparePartCategory(category) || isSparePartCategory(name)) return 'Spare Part';
@@ -224,7 +224,7 @@ export const SalesPage = () => {
     ].filter(Boolean);
 
     receipt.items.forEach((item) => {
-      lines.push(`- ${item.name} x ${item.quantity} @ $${Number(item.unitPrice).toFixed(2)}`);
+      lines.push(`- ${item.name} x ${item.quantity} @ ${formatCurrency(item.unitPrice)}`);
     });
 
     lines.push('', `TOTAL: ${formatCurrency(receipt.total)}`);
@@ -243,7 +243,7 @@ export const SalesPage = () => {
     }
 
     const itemRows = receipt.items
-      .map((item) => `<tr><td>${item.name}</td><td>${item.quantity}</td><td>$${Number(item.unitPrice).toFixed(2)}</td></tr>`)
+      .map((item) => `<tr><td>${item.name}</td><td>${item.quantity}</td><td>${formatCurrency(item.unitPrice)}</td></tr>`)
       .join('');
 
     printWindow.document.write(`
@@ -538,7 +538,7 @@ export const SalesPage = () => {
 
     return products.filter((product) => {
       const productName = String(product.name || '').toLowerCase();
-      const productCategory = String(product.category || '').toLowerCase();
+      const productCategory = String(product.category?.name || product.category || '').toLowerCase();
       const businessCategory = mapProductToSalesCategory(product).toLowerCase();
 
       const matchesSearch =
@@ -559,7 +559,7 @@ export const SalesPage = () => {
   }, [products, searchTerm, categoryFilter, selectedCategory, selectedModel]);
 
   const sparePartsCount = useMemo(
-    () => filteredProducts.filter((product) => isSparePartCategory(product.category)).length,
+    () => filteredProducts.filter((product) => isSparePartCategory(product.category?.name || product.category)).length,
     [filteredProducts]
   );
 
@@ -577,10 +577,10 @@ export const SalesPage = () => {
 
       {/* Sales Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <StatCard label="Today's Sales" value={todaySales.length} accent="text-blue-600" icon={<ShoppingCart className="w-8 h-8" />} />
-        <StatCard label="Today's Revenue" value={formatCurrency(todayRevenue)} accent="text-green-600" icon={<DollarSign className="w-8 h-8" />} />
-        <StatCard label="Cart Total" value={formatCurrency(calculateTotal())} accent="text-orange-600" icon={<Printer className="w-8 h-8" />} />
-        <StatCard label="Unique Customers" value={uniqueCustomersToday} accent="text-purple-600" icon={<TrendingUp className="w-8 h-8" />} />
+        <StatCard label="Today's Sales" value={todaySales.length} accent="text-green-600" icon={<ShoppingCart className="w-8 h-8" />} />
+        <StatCard label="Today's Revenue" value={formatCurrency(todayRevenue)} accent="text-green-600" icon={<Banknote className="w-8 h-8" />} />
+        <StatCard label="Cart Total" value={formatCurrency(calculateTotal())} accent="text-green-600" icon={<Printer className="w-8 h-8" />} />
+        <StatCard label="Unique Customers" value={uniqueCustomersToday} accent="text-green-600" icon={<TrendingUp className="w-8 h-8" />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

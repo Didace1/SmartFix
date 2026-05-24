@@ -12,6 +12,8 @@ import {
 import { PageHeader } from '../../shared/components/Common/PageHeader';
 import { LoadingState } from '../../shared/components/Common/LoadingState';
 import { formatCurrency, formatNumber } from '../../shared/utils/formatters';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const SYSTEM_BACKEND_BASE_URL = process.env.REACT_APP_SYSTEM_BACKEND_URL || 'http://localhost:8080';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
@@ -60,13 +62,13 @@ export const InventoryReportsPage = () => {
   const totalItems = inventory.length;
   const totalValue = inventory.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 0)), 0);
   const lowStockItems = inventory.filter(item => 
-    item.quantity <= (item.reorderPoint || 10)
+    item.quantity <= (item.reorderPoint || 4) // Low stock threshold: 4
   );
   const outOfStockItems = inventory.filter(item => item.quantity === 0);
 
   // Stock status distribution
   const stockStatusData = useMemo(() => {
-    const inStock = inventory.filter(item => item.quantity > (item.reorderPoint || 10)).length;
+    const inStock = inventory.filter(item => item.quantity > (item.reorderPoint || 4)).length;
     const lowStock = lowStockItems.length;
     const outOfStock = outOfStockItems.length;
     
@@ -147,31 +149,36 @@ export const InventoryReportsPage = () => {
     return result;
   }, [sales]);
 
-  // Export to CSV
-  const exportToCSV = () => {
-    const headers = ['Name', 'SKU', 'Category', 'Quantity', 'Price', 'Total Value', 'Reorder Point', 'Status'];
+  // Export to PDF
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.text(`Inventory Report - Last ${dateRange} Days`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const headers = [['Name', 'SKU', 'Category', 'Quantity', 'Price', 'Total Value', 'Reorder Point', 'Status']];
     const rows = inventory.map(item => [
       item.name || '-',
       item.sku || '-',
       item.category?.name || '-',
       item.quantity || 0,
-      item.price || 0,
-      (Number(item.price || 0) * Number(item.quantity || 0)).toFixed(2),
+      formatCurrency(item.price || 0),
+      formatCurrency(Number(item.price || 0) * Number(item.quantity || 0)),
       item.reorderPoint || '-',
-      item.quantity === 0 ? 'Out of Stock' : item.quantity <= (item.reorderPoint || 10) ? 'Low Stock' : 'In Stock'
+      item.quantity === 0 ? 'Out of Stock' : item.quantity <= (item.reorderPoint || 4) ? 'Low Stock' : 'In Stock'
     ]);
     
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+    autoTable(doc, {
+      head: headers,
+      body: rows,
+      startY: 28,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
     
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `inventory-report-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+    doc.save(`inventory-report-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   if (loading) {
@@ -203,11 +210,11 @@ export const InventoryReportsPage = () => {
             <option value="365">Last year</option>
           </select>
           <button
-            onClick={exportToCSV}
+            onClick={exportToPDF}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Download className="w-4 h-4" />
-            Export CSV
+            Export PDF
           </button>
         </div>
       </div>
@@ -414,7 +421,7 @@ export const InventoryReportsPage = () => {
                     <tr key={i} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm text-gray-900">{item.name}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-orange-600 text-right">{item.quantity}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 text-right">{item.reorderPoint || 10}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-right">{item.reorderPoint || 4}</td>
                     </tr>
                   ))}
                   {lowStockItems.length === 0 && (

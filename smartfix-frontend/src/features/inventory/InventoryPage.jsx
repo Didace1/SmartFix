@@ -6,6 +6,7 @@ import { PageHeader } from '../../shared/components/Common/PageHeader';
 import { StatCard } from '../../shared/components/Common/StatCard';
 import { LoadingState } from '../../shared/components/Common/LoadingState';
 import { EmptyState } from '../../shared/components/Common/EmptyState';
+import { QRCodeInventoryScanner } from './components/QRCodeInventoryScanner';
 import { useLocation } from 'react-router-dom';
 import { formatCurrency, formatNumber, formatDate } from '../../shared/utils/formatters';
 
@@ -22,6 +23,8 @@ export const InventoryPage = () => {
   const [stockDate, setStockDate] = useState(new Date().toISOString().slice(0, 10));
   const [stockCategory, setStockCategory] = useState('');
   const [newItem, setNewItem] = useState({ name: '', category: '', quantity: 1, price: '', purchaseCost: '' });
+  const [scannedProduct, setScannedProduct] = useState(null);
+  const [showProductModal, setShowProductModal] = useState(false);
 
   useEffect(() => {
     loadInventory();
@@ -81,7 +84,7 @@ export const InventoryPage = () => {
       name: newItem.name.trim(),
       category: newItem.category,
       quantity: parseInt(newItem.quantity) || 0,
-      reorderPoint: parseInt(newItem.reorderPoint) || 10,
+      reorderPoint: parseInt(newItem.reorderPoint) || 4, // Low stock threshold set to 4
       price: parseFloat(newItem.price),
       purchaseCost: newItem.purchaseCost ? parseFloat(newItem.purchaseCost) : 0,
       lastStockedAt: stockDate,
@@ -131,12 +134,24 @@ export const InventoryPage = () => {
     }
   };
 
+  const handleProductScanned = (product) => {
+    // Display scanned product details in modal
+    setScannedProduct(product);
+    setShowProductModal(true);
+    toast.success(`Product scanned: ${product.name}`);
+  };
+
+  const closeProductModal = () => {
+    setShowProductModal(false);
+    setScannedProduct(null);
+  };
+
   const baseList = showLowStockOnly
     ? inventory.filter(item => item.quantity <= item.reorderPoint)
     : inventory;
   const filteredInventory = baseList.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.category?.name || item.category || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -157,7 +172,7 @@ export const InventoryPage = () => {
         <StatCard label="Total Items" value={formatNumber(inventory.length)} accent="text-blue-600" />
         <StatCard label="Total Value" value={formatCurrency(totalValue)} accent="text-green-600" />
         <StatCard label="Low Stock Items" value={formatNumber(lowStockItems.length)} accent="text-red-600" />
-        <StatCard label="Categories" value={formatNumber(new Set(inventory.map(i => i.category)).size)} accent="text-purple-600" />
+        <StatCard label="Categories" value={formatNumber(new Set(inventory.map(i => i.category?.name || i.category)).size)} accent="text-purple-600" />
       </div>
 
       {/* Low Stock Alert */}
@@ -171,6 +186,59 @@ export const InventoryPage = () => {
                 The following items are below reorder point: {lowStockItems.map(i => i.name).join(', ')}
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Scanner */}
+      <div className="mb-6">
+        <QRCodeInventoryScanner onProductScanned={handleProductScanned} />
+      </div>
+
+      {/* Scanned Product Details Modal */}
+      {showProductModal && scannedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Scanned Product Details</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-700">SKU:</span>
+                <span className="text-gray-900 font-mono">{scannedProduct.sku}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-700">Name:</span>
+                <span className="text-gray-900">{scannedProduct.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-700">Category:</span>
+                <span className="text-gray-900">{scannedProduct.category?.name || scannedProduct.category || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-700">Quantity:</span>
+                <span className={`font-semibold ${scannedProduct.quantity <= scannedProduct.reorderPoint ? 'text-red-600' : 'text-green-600'}`}>
+                  {formatNumber(scannedProduct.quantity)}
+                  {scannedProduct.quantity <= scannedProduct.reorderPoint && ' (Low Stock)'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-700">Purchase Cost:</span>
+                <span className="text-gray-900">{formatCurrency(scannedProduct.purchaseCost ?? 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-700">Selling Price:</span>
+                <span className="text-gray-900">{formatCurrency(scannedProduct.price)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-medium text-gray-700">Last Stocked:</span>
+                <span className="text-gray-900">{formatDate(scannedProduct.lastStockedAt)}</span>
+              </div>
+            </div>
+            <button
+              onClick={closeProductModal}
+              className="w-full mt-6 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
@@ -324,7 +392,7 @@ export const InventoryPage = () => {
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{item.sku}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.category}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.category?.name || item.category || 'N/A'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`text-sm font-medium ${
                       item.quantity <= item.reorderPoint ? 'text-red-600' : 'text-gray-900'

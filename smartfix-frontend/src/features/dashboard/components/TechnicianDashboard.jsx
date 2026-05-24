@@ -4,106 +4,105 @@ import { Link } from 'react-router-dom';
 import { Wrench, CheckCircle, Clock, TrendingUp, AlertCircle, ClipboardList, PlayCircle } from 'lucide-react';
 
 export const TechnicianDashboard = ({ stats }) => {
-  const openDiagnoses = Number(stats?.myTasks || 0);
+  const assignedTasks = Number(stats?.myTasks || 0);
   const completedToday = Number(stats?.completedToday || 0);
-  const urgentJobs = Number(stats?.urgentTasks || 0);
-  const successRate = Number(stats?.successRate || 0);
   const pendingRepairs = Number(stats?.pendingRepairs || 0);
+  const successRate = Number(stats?.successRate || 0);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+        <div className="bg-white rounded-lg shadow p-8 border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Open Diagnoses</p>
-              <p className="text-2xl font-bold text-blue-600">{openDiagnoses}</p>
+              <p className="text-gray-500 text-base font-medium">Assigned Tasks</p>
+              <p className="text-4xl font-bold text-blue-600 mt-2">{assignedTasks}</p>
             </div>
-            <ClipboardList className="w-8 h-8 text-blue-300" />
+            <ClipboardList className="w-12 h-12 text-blue-300" />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+        <div className="bg-white rounded-lg shadow p-8 border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Completed Today</p>
-              <p className="text-2xl font-bold text-green-600">{completedToday}</p>
+              <p className="text-gray-500 text-base font-medium">Completed Today</p>
+              <p className="text-4xl font-bold text-blue-600 mt-2">{completedToday}</p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-300" />
+            <CheckCircle className="w-12 h-12 text-blue-300" />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+        <div className="bg-white rounded-lg shadow p-8 border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Success Rate</p>
-              <p className="text-2xl font-bold text-purple-600">{successRate}%</p>
+              <p className="text-gray-500 text-base font-medium">Pending Repairs</p>
+              <p className="text-4xl font-bold text-blue-600 mt-2">{pendingRepairs}</p>
             </div>
-            <TrendingUp className="w-8 h-8 text-purple-300" />
+            <Wrench className="w-12 h-12 text-blue-300" />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+        <div className="bg-white rounded-lg shadow p-8 border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Urgent Tasks</p>
-              <p className="text-2xl font-bold text-red-600">{urgentJobs}</p>
+              <p className="text-gray-500 text-base font-medium">Success Rate</p>
+              <p className="text-4xl font-bold text-blue-600 mt-2">{successRate}%</p>
             </div>
-            <AlertCircle className="w-8 h-8 text-red-300" />
+            <TrendingUp className="w-12 h-12 text-blue-300" />
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Technician Workflow</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-100">
-              <div className="flex items-center gap-3">
-                <PlayCircle className="w-5 h-5 text-blue-600" />
-                <span className="text-gray-800">Diagnose new device issues</span>
+        <div className="lg:col-span-2 bg-white rounded-lg shadow p-8">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Technician Workflow</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-blue-50 border border-blue-100">
+              <div className="flex items-center gap-4">
+                <ClipboardList className="w-6 h-6 text-blue-600" />
+                <span className="text-gray-800 text-base font-medium">Tasks assigned to you</span>
               </div>
-              <span className="text-sm font-semibold text-blue-700">{openDiagnoses} open</span>
+              <span className="text-base font-semibold text-blue-700">{assignedTasks} assigned</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 border border-amber-100">
-              <div className="flex items-center gap-3">
-                <Wrench className="w-5 h-5 text-amber-600" />
-                <span className="text-gray-800">Repair jobs waiting for completion</span>
+            <div className="flex items-center justify-between p-4 rounded-lg bg-amber-50 border border-amber-100">
+              <div className="flex items-center gap-4">
+                <Wrench className="w-6 h-6 text-amber-600" />
+                <span className="text-gray-800 text-base font-medium">Repair jobs waiting for completion</span>
               </div>
-              <span className="text-sm font-semibold text-amber-700">{pendingRepairs} pending</span>
+              <span className="text-base font-semibold text-amber-700">{pendingRepairs} pending</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 border border-red-100">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-                <span className="text-gray-800">Urgent interventions</span>
+            <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 border border-green-100">
+              <div className="flex items-center gap-4">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+                <span className="text-gray-800 text-base font-medium">Completed today</span>
               </div>
-              <span className="text-sm font-semibold text-red-700">{urgentJobs} urgent</span>
+              <span className="text-base font-semibold text-green-700">{completedToday} done</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-100">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="text-gray-800">Completed today</span>
+            <div className="flex items-center justify-between p-4 rounded-lg bg-purple-50 border border-purple-100">
+              <div className="flex items-center gap-4">
+                <TrendingUp className="w-6 h-6 text-purple-600" />
+                <span className="text-gray-800 text-base font-medium">Your success rate</span>
               </div>
-              <span className="text-sm font-semibold text-green-700">{completedToday} done</span>
+              <span className="text-base font-semibold text-purple-700">{successRate}%</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Focus</h3>
-          <div className="space-y-3">
-            <div className="p-3 rounded-lg bg-gray-50 border">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Next Task</p>
-              <p className="text-sm font-medium text-gray-800 mt-1">
+        <div className="bg-white rounded-lg shadow p-8">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Current Focus</h3>
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg bg-gray-50 border">
+              <p className="text-sm text-gray-500 uppercase tracking-wide font-semibold">Next Task</p>
+              <p className="text-base font-medium text-gray-800 mt-2">
                 {stats?.nextTask || 'Review pending repair queue'}
               </p>
             </div>
-            <div className="p-3 rounded-lg bg-gray-50 border">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Average Repair Time</p>
-              <p className="text-sm font-medium text-gray-800 mt-1">
+            <div className="p-4 rounded-lg bg-gray-50 border">
+              <p className="text-sm text-gray-500 uppercase tracking-wide font-semibold">Average Repair Time</p>
+              <p className="text-base font-medium text-gray-800 mt-2">
                 {stats?.avgRepairTime ? `${stats.avgRepairTime} mins` : 'N/A'}
               </p>
             </div>
-            <div className="p-3 rounded-lg bg-gray-50 border">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Weekly Completed</p>
-              <p className="text-sm font-medium text-gray-800 mt-1">
+            <div className="p-4 rounded-lg bg-gray-50 border">
+              <p className="text-sm text-gray-500 uppercase tracking-wide font-semibold">Weekly Completed</p>
+              <p className="text-base font-medium text-gray-800 mt-2">
                 {stats?.weeklyCompleted || 0} tasks
               </p>
             </div>
@@ -134,16 +133,6 @@ export const TechnicianDashboard = ({ stats }) => {
           </Link>
         </div>
       </div>
-
-      {stats?.nextTask && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock className="w-4 h-4 text-blue-700" />
-            <h3 className="font-semibold text-blue-800">Priority Reminder</h3>
-          </div>
-          <p className="text-blue-700">{stats.nextTask}</p>
-        </div>
-      )}
     </div>
   );
 };

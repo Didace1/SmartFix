@@ -22,7 +22,7 @@ export const StockViewPage = () => {
   };
   const mapCategory = (item) => {
     const name = String(item?.name || '').toLowerCase();
-    const cat = String(item?.category || '').toLowerCase();
+    const cat = String(item?.category?.name || item?.category || '').toLowerCase();
     const combined = `${name} ${cat}`;
     if (isSpare(name) || isSpare(cat)) return 'Spare Parts';
     if (combined.includes('smartwatch') || combined.includes('watch')) return 'Smartwatch';

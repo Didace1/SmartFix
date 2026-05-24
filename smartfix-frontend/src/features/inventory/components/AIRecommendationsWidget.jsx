@@ -110,7 +110,7 @@ export const AIRecommendationsWidget = () => {
                       {device.recommendation_score}/5.0
                     </span>
                   </div>
-                  <p className="text-xs text-gray-600 mb-2">{device.brand} • {device.category}</p>
+                  <p className="text-xs text-gray-600 mb-2">{device.brand} • {device.category?.name || device.category || 'N/A'}</p>
                   <p className="text-xs text-gray-700 line-clamp-2">{device.reason}</p>
                   <div className="flex items-center gap-3 mt-2">
                     <div className="flex items-center gap-1">

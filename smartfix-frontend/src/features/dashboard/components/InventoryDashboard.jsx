@@ -52,7 +52,7 @@ export const InventoryDashboard = ({ stats }) => {
           // Calculate category statistics from real database data
           const categoryMap = {};
           data.forEach(item => {
-            const category = item.category || 'Uncategorized';
+            const category = item.category?.name || item.category || 'Uncategorized';
             if (!categoryMap[category]) {
               categoryMap[category] = {
                 name: category,
@@ -102,9 +102,9 @@ export const InventoryDashboard = ({ stats }) => {
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-        <StatCard label="Total Stock Items"   value={formatNumber(stats.totalParts)}   accent="text-blue-600"   icon={<Package className="w-5 h-5" />} />
-        <StatCard label="Total Quantity"      value={formatNumber(inventory.reduce((sum, item) => sum + (item.quantity || 0), 0))} accent="text-purple-600" icon={<Package className="w-5 h-5" />} />
-        <StatCard label="Low Stock Alerts"    value={formatNumber(stats.lowStockItems)} accent="text-red-600"    icon={<AlertCircle className="w-5 h-5" />} subtitle={stats.lowStockItems > 0 ? 'Needs attention' : 'All good'} />
+        <StatCard label="Total Stock Items"   value={formatNumber(stats.totalParts)}   accent="text-green-600"   icon={<Package className="w-5 h-5" />} />
+        <StatCard label="Total Quantity"      value={formatNumber(inventory.reduce((sum, item) => sum + (item.quantity || 0), 0))} accent="text-green-600" icon={<Package className="w-5 h-5" />} />
+        <StatCard label="Low Stock Alerts"    value={formatNumber(stats.lowStockItems)} accent="text-green-600"    icon={<AlertCircle className="w-5 h-5" />} subtitle={stats.lowStockItems > 0 ? 'Needs attention' : 'All good'} />
         <StatCard label="Total Stock Value"   value={formatCurrency(stats.totalValue)} accent="text-green-600"  icon={<TrendingUp className="w-5 h-5" />} />
       </div>
 
@@ -131,33 +131,33 @@ export const InventoryDashboard = ({ stats }) => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {categoryStats.slice(0, 5).map((category, index) => {
               return (
                 <div 
                   key={category.name} 
-                  className="bg-gradient-to-br from-blue-600 to-blue-700 border border-blue-200 rounded-lg p-3 hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 transform"
+                  className="bg-white border-2 border-green-500 rounded-xl p-5 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105 transform"
                   onClick={() => navigate(`/inventory?category=${encodeURIComponent(category.name)}`)}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-white truncate text-sm">{category.name}</h3>
-                    <div className="w-2.5 h-2.5 rounded-full bg-blue-300 opacity-80"></div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-gray-600 truncate text-lg">{category.name}</h3>
+                    <div className="w-3 h-3 rounded-full bg-white border-2 border-green-500"></div>
                   </div>
                   
-                  <div className="space-y-1.5">
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-white opacity-80">Items:</span>
-                      <span className="font-semibold text-white text-sm">{formatNumber(category.count)}</span>
+                      <span className="text-sm text-gray-500 font-medium">Items:</span>
+                      <span className="font-bold text-gray-600 text-lg">{formatNumber(category.count)}</span>
                     </div>
                     
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-white opacity-80">Qty:</span>
-                      <span className="font-semibold text-white text-sm">{formatNumber(category.totalQuantity)}</span>
+                      <span className="text-sm text-gray-500 font-medium">Qty:</span>
+                      <span className="font-bold text-gray-600 text-lg">{formatNumber(category.totalQuantity)}</span>
                     </div>
                     
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-white opacity-80">Value:</span>
-                      <span className="font-semibold text-white text-xs">{formatCurrency(category.totalValue)}</span>
+                      <span className="text-sm text-gray-500 font-medium">Value:</span>
+                      <span className="font-bold text-gray-600 text-base">{formatCurrency(category.totalValue)}</span>
                     </div>
                   </div>
                 </div>
@@ -234,6 +234,7 @@ export const InventoryDashboard = ({ stats }) => {
           </select>
         </div>
 
+        {/* Row 1: Stock Movement & Stock Value */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Stock Movement Trend</h3>
@@ -266,49 +267,7 @@ export const InventoryDashboard = ({ stats }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Category Distribution</h3>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={analytics.categoryDistribution}
-                    dataKey="value"
-                    nameKey="name"
-                    outerRadius={95}
-                    label
-                  >
-                    {(analytics.categoryDistribution || []).map((entry, index) => {
-                      const colors = ['#2563eb', '#16a34a', '#f59e0b', '#dc2626', '#7c3aed', '#0ea5e9'];
-                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                    })}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Top Low Stock Items</h3>
-            <div className="space-y-2 max-h-72 overflow-auto">
-              {(analytics.lowStockTop || []).length === 0 ? (
-                <p className="text-sm text-gray-500">No low stock items in selected period.</p>
-              ) : (
-                analytics.lowStockTop.map((item) => (
-                  <div key={`${item.name}-${item.category}`} className="p-3 border rounded-lg bg-gray-50">
-                    <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-xs text-gray-500">{item.category}</p>
-                    <p className="text-sm text-red-600 mt-1">Qty: {formatNumber(item.quantity)} (Reorder: {formatNumber(item.reorderPoint)})</p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
+        {/* Row 2: Stock Flow & Value Change */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Stock-In vs Stock-Out</h3>
@@ -342,65 +301,44 @@ export const InventoryDashboard = ({ stats }) => {
             </div>
           </div>
         </div>
+
+        {/* Row 3: Low Stock Items (Full Width) */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Top Low Stock Items</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {(analytics.lowStockTop || []).length === 0 ? (
+              <p className="text-sm text-gray-500 col-span-full text-center py-8">No low stock items in selected period.</p>
+            ) : (
+              analytics.lowStockTop.map((item) => (
+                <div key={`${item.name}-${item.category?.name || item.category || 'unknown'}`} className="p-3 border rounded-lg bg-gray-50 hover:shadow-md transition-shadow">
+                  <p className="font-medium text-gray-900 truncate">{item.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">{item.category?.name || item.category || 'N/A'}</p>
+                  <p className="text-sm text-red-600 mt-2 font-semibold">Qty: {formatNumber(item.quantity)} <span className="text-gray-500 font-normal">(Reorder: {formatNumber(item.reorderPoint)})</span></p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Stock actions directly under charts */}
+        {/* Removed - buttons hidden */}
       </div>
 
-      {/* Quick Actions - Moved to Bottom */}
+      {/* AI + QR below stock actions */}
       <div className="mt-8">
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">Quick Actions</h2>
-          <p className="text-sm text-gray-500">Manage your inventory efficiently</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <AIRecommendationsWidget />
+          <QRCodeWidget />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
-          {/* AI Recommendations Widget */}
-          <div className="lg:col-span-2">
-            <AIRecommendationsWidget />
-          </div>
-          
-          {/* QR Code Widget */}
-          <div className="lg:col-span-2">
-            <QRCodeWidget />
-          </div>
-          
-          {/* Quick Action Buttons */}
-          <div className="lg:col-span-2 grid grid-cols-1 gap-4">
-            {[
-              { 
-                label: 'Add Stock', 
-                icon: <PlusCircle className="w-6 h-6" />, 
-                color: 'bg-blue-600 hover:bg-blue-700',
-                description: 'Add new stock to inventory',
-                onClick: () => navigate('/inventory?addStock=1') 
-              },
-              { 
-                label: 'Stock Alerts', 
-                icon: <AlertCircle className="w-6 h-6" />, 
-                color: 'bg-amber-500 hover:bg-amber-600',
-                description: 'View low stock warnings',
-                onClick: () => navigate('/inventory/stock-alerts') 
-              },
-              { 
-                label: 'QR Codes', 
-                icon: <Tag className="w-6 h-6" />, 
-                color: 'bg-purple-600 hover:bg-purple-700',
-                description: 'Manage QR codes',
-                onClick: () => navigate('/inventory/qrcodes') 
-              },
-            ].map(({ label, icon, color, description, onClick }) => (
-              <button
-                key={label}
-                onClick={onClick}
-                className={`${color} text-white rounded-xl p-4 flex items-center gap-3 text-left transition-all shadow-md hover:shadow-lg transform hover:-translate-y-1 w-full`}
-              >
-                <div className="w-10 h-10 rounded-lg bg-white bg-opacity-20 flex items-center justify-center flex-shrink-0">
-                  {icon}
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-semibold">{label}</h3>
-                  <p className="text-sm text-white text-opacity-90">{description}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+        <div className="mt-4 flex justify-center">
+          <button
+            type="button"
+            onClick={() => navigate('/inventory/qrcodes')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-colors"
+          >
+            <Tag className="w-4 h-4" />
+            Manage QR codes
+          </button>
         </div>
       </div>
     </div>

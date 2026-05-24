@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users, Package, DollarSign, TrendingUp, Shield,
   AlertTriangle, Wrench, UserCheck, ShoppingCart,
-  Cpu, ChevronRight, Clock
+  Cpu, ChevronRight, Clock, Brain
 } from 'lucide-react';
 import { useGetPendingUsersQuery } from '../../../features/auth/services/authApi';
 import { formatCurrency } from '../../../shared/utils/formatters';
@@ -64,12 +64,14 @@ export const AdminDashboard = ({ stats }) => {
   const modules = [
     {
       title: 'Operations',
-      description: 'Fault diagnosis, repair guides & failure prediction',
+      description: 'Fault diagnosis, AI support, repair guides & failure prediction',
       icon: Cpu,
       iconColor: 'text-blue-600',
       iconBg: 'bg-blue-50',
       actions: [
         { label: 'Fault Diagnosis', path: '/diagnosis' },
+        { label: 'AI Assistant', path: '/ai-assistant' },
+        { label: 'Repair Knowledge', path: '/repair-knowledge' },
         { label: 'Repair Guide', path: '/repair' },
         { label: 'Failure Prediction', path: '/failure-prediction' },
       ]
@@ -88,7 +90,7 @@ export const AdminDashboard = ({ stats }) => {
     },
     {
       title: 'Inventory',
-      description: 'Stock management and low-stock monitoring',
+      description: 'Stock management, recommendations and inventory reporting',
       icon: Package,
       iconColor: 'text-orange-600',
       iconBg: 'bg-orange-50',
@@ -96,6 +98,21 @@ export const AdminDashboard = ({ stats }) => {
         { label: 'View Inventory', path: '/inventory' },
         { label: 'Stock Alerts', path: '/inventory/stock-alerts' },
         { label: 'View Stock', path: '/inventory/view' },
+        { label: 'AI Recommendations', path: '/inventory/ai-recommendations' },
+        { label: 'QR Codes', path: '/inventory/qrcodes' },
+        { label: 'Inventory Reports', path: '/inventory/reports' },
+      ]
+    },
+    {
+      title: 'Technician Intelligence',
+      description: 'AI assistance and shared repair knowledge for technicians',
+      icon: Brain,
+      iconColor: 'text-cyan-600',
+      iconBg: 'bg-cyan-50',
+      actions: [
+        { label: 'AI Technician Assistant', path: '/ai-assistant' },
+        { label: 'Repair Knowledge', path: '/repair-knowledge' },
+        { label: 'Repair Tasks', path: '/my-repair-tasks' },
       ]
     },
     {
@@ -108,7 +125,7 @@ export const AdminDashboard = ({ stats }) => {
         { label: 'Sales', path: '/sales' },
         { label: 'Sales History', path: '/sales-history' },
         { label: 'Sales Analytics', path: '/sales-analytics' },
-        { label: 'Sales Repairs', path: '/sales-repairs' },
+        { label: 'Repair Tasks', path: '/sales-repairs' },
         { label: 'Customers', path: '/customers' },
       ]
     },

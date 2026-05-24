@@ -2,62 +2,139 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Bell, AlertTriangle, CheckCircle2, PackageCheck, Clock, Trash2 } from 'lucide-react';
+import { Bell, AlertTriangle, CheckCircle2, PackageCheck, Clock, Trash2, Loader } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export const NotificationsPage = () => {
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState('all'); // all | stockout | low-stock | restocked | repair-completed | warranty-expiry
-  const [scope, setScope] = useState('auto'); // auto | sales | inventory
+  const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const keyId = user?.email || user?.id || 'default';
-  const salesHistoryKey = `sales_notifications_history_${keyId}`;
-  const inventoryHistoryKey = `inventory_notifications_history_${keyId}`;
+  const API_BASE = process.env.REACT_APP_SYSTEM_BACKEND_URL || 'http://localhost:8080';
 
   useEffect(() => {
-    const load = () => {
-      const sales = JSON.parse(localStorage.getItem(salesHistoryKey) || '[]');
-      const inv = JSON.parse(localStorage.getItem(inventoryHistoryKey) || '[]');
+    loadNotifications();
+    loadUnreadCount();
+  }, [user?.role, user?.id]);
 
-      let list = [];
-      if (user?.role === 'sales') list = sales;
-      else if (user?.role === 'inventory') list = inv;
-      else list = [...sales, ...inv]; // admin or others
+  const loadNotifications = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        role: user?.role || 'admin',
+      });
+      if (user?.id) {
+        params.append('userId', user.id);
+      }
 
-      // sort by timestamp desc if present
-      list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-      setItems(list);
-    };
-    load();
-  }, [user?.role, salesHistoryKey, inventoryHistoryKey]);
+      const response = await fetch(`${API_BASE}/api/notifications?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        setItems(data);
+      } else {
+        console.error('Failed to load notifications');
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUnreadCount = async () => {
+    try {
+      const params = new URLSearchParams({
+        role: user?.role || 'admin',
+      });
+      if (user?.id) {
+        params.append('userId', user.id);
+      }
+
+      const response = await fetch(`${API_BASE}/api/notifications/unread-count?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadCount(data.count || 0);
+      }
+    } catch (error) {
+      console.error('Error loading unread count:', error);
+    }
+  };
 
   const filtered = useMemo(() => {
     return items.filter((n) => (filter === 'all' ? true : n.type === filter));
   }, [items, filter]);
 
-  const clearHistory = () => {
-    if (scope === 'auto') {
-      if (user?.role === 'sales') localStorage.setItem(salesHistoryKey, '[]');
-      else if (user?.role === 'inventory') localStorage.setItem(inventoryHistoryKey, '[]');
-      else {
-        localStorage.setItem(salesHistoryKey, '[]');
-        localStorage.setItem(inventoryHistoryKey, '[]');
+  const clearHistory = async () => {
+    try {
+      const params = new URLSearchParams({
+        role: user?.role || 'admin',
+      });
+      if (user?.id) {
+        params.append('userId', user.id);
       }
-    } else if (scope === 'sales') {
-      localStorage.setItem(salesHistoryKey, '[]');
-    } else if (scope === 'inventory') {
-      localStorage.setItem(inventoryHistoryKey, '[]');
+
+      const response = await fetch(`${API_BASE}/api/notifications/clear-all?${params}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('All notifications cleared');
+        setItems([]);
+        setUnreadCount(0);
+      } else {
+        toast.error('Failed to clear notifications');
+      }
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      toast.error('Failed to clear notifications');
     }
-    // reload
-    const sales = JSON.parse(localStorage.getItem(salesHistoryKey) || '[]');
-    const inv = JSON.parse(localStorage.getItem(inventoryHistoryKey) || '[]');
-    let list = [];
-    if (user?.role === 'sales') list = sales;
-    else if (user?.role === 'inventory') list = inv;
-    else list = [...sales, ...inv];
-    list.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-    setItems(list);
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+      });
+
+      if (response.ok) {
+        // Update local state
+        setItems(items.map(item => 
+          item.id === notificationId ? { ...item, isRead: true } : item
+        ));
+        loadUnreadCount();
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const params = new URLSearchParams({
+        role: user?.role || 'admin',
+      });
+      if (user?.id) {
+        params.append('userId', user.id);
+      }
+
+      const response = await fetch(`${API_BASE}/api/notifications/mark-all-read?${params}`, {
+        method: 'PUT',
+      });
+
+      if (response.ok) {
+        toast.success('All notifications marked as read');
+        setItems(items.map(item => ({ ...item, isRead: true })));
+        setUnreadCount(0);
+      } else {
+        toast.error('Failed to mark notifications as read');
+      }
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+      toast.error('Failed to mark notifications as read');
+    }
   };
 
   const Icon = ({ type }) => {
@@ -74,8 +151,17 @@ export const NotificationsPage = () => {
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow">
         <div className="px-6 py-5 border-b rounded-t-xl bg-gray-50 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-            <p className="text-sm text-gray-500">History for {user?.role === 'inventory' ? 'Inventor' : (user?.role || 'User')}</p>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              Notifications
+              {unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </h1>
+            <p className="text-sm text-gray-500">
+              {user?.role === 'inventory' ? 'Inventory Manager' : (user?.role || 'User')} notifications
+            </p>
           </div>
           <button onClick={() => navigate(-1)} className="text-sm text-blue-600 hover:underline">Back</button>
         </div>
@@ -94,38 +180,60 @@ export const NotificationsPage = () => {
             ))}
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <select
-              value={scope}
-              onChange={(e) => setScope(e.target.value)}
-              className="text-xs border border-gray-300 rounded px-2 py-1"
+            {unreadCount > 0 && (
+              <button 
+                onClick={markAllAsRead} 
+                className="flex items-center gap-1 text-xs text-blue-600 border border-blue-200 px-3 py-1 rounded hover:bg-blue-50"
+              >
+                <CheckCircle2 className="w-3 h-3" /> Mark all read
+              </button>
+            )}
+            <button 
+              onClick={clearHistory} 
+              className="flex items-center gap-1 text-xs text-red-600 border border-red-200 px-3 py-1 rounded hover:bg-red-50"
             >
-              <option value="auto">Current role</option>
-              <option value="sales">Sales</option>
-              <option value="inventory">Inventor</option>
-            </select>
-            <button onClick={clearHistory} className="flex items-center gap-1 text-xs text-red-600 border border-red-200 px-3 py-1 rounded hover:bg-red-50">
-              <Trash2 className="w-3 h-3" /> Clear history
+              <Trash2 className="w-3 h-3" /> Clear all
             </button>
           </div>
         </div>
 
-        {filtered.length === 0 ? (
-          <div className="px-6 py-12 text-center text-gray-500 text-sm">No notifications found.</div>
+        {loading ? (
+          <div className="px-6 py-12 text-center">
+            <Loader className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-2" />
+            <p className="text-sm text-gray-500">Loading notifications...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="px-6 py-12 text-center text-gray-500 text-sm">
+            <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p>No notifications found.</p>
+          </div>
         ) : (
           <ul className="divide-y">
             {filtered.map((n) => (
-              <li key={n.id} className="px-6 py-4 flex items-start gap-3 hover:bg-gray-50">
+              <li 
+                key={n.id} 
+                className={`px-6 py-4 flex items-start gap-3 hover:bg-gray-50 ${!n.isRead ? 'bg-blue-50' : ''}`}
+                onClick={() => !n.isRead && markAsRead(n.id)}
+              >
                 <div className="mt-0.5"><Icon type={n.type} /></div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                  <p className={`text-sm ${!n.isRead ? 'font-semibold' : 'font-medium'} text-gray-900`}>
+                    {n.title}
+                  </p>
                   {n.detail && <p className="text-xs text-gray-500 mt-1">{n.detail}</p>}
                   <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                     <Clock className="w-3 h-3" />
-                    <span>{n.timestamp ? new Date(n.timestamp).toLocaleString() : '—'}</span>
+                    <span>{n.createdAt ? new Date(n.createdAt).toLocaleString() : '—'}</span>
                   </div>
                 </div>
                 {n.actionPath && (
-                  <button onClick={() => navigate(n.actionPath)} className="text-xs text-blue-600 hover:underline">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(n.actionPath);
+                    }} 
+                    className="text-xs text-blue-600 hover:underline"
+                  >
                     {n.actionLabel || 'Open'}
                   </button>
                 )}

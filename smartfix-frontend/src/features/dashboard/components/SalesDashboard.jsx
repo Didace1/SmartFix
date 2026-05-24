@@ -114,39 +114,39 @@ export const SalesDashboard = ({ stats }) => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow p-5 border-l-4 border-blue-500">
+        <div className="bg-white rounded-xl shadow p-5 border-l-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase">Total Revenue</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalRevenue)}</p>
               <p className="text-xs text-gray-400 mt-1">{sales.length} total sales</p>
             </div>
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-green-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow p-5 border-l-4 border-orange-500">
+        <div className="bg-white rounded-xl shadow p-5 border-l-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase">Pending Repairs</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{pendingRepairs}</p>
               <p className="text-xs text-gray-400 mt-1">{repairTasks.length} total tasks</p>
             </div>
-            <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-              <Wrench className="w-6 h-6 text-orange-600" />
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+              <Wrench className="w-6 h-6 text-green-600" />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow p-5 border-l-4 border-purple-500">
+        <div className="bg-white rounded-xl shadow p-5 border-l-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase">Active Warranties</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{activeWarranties}</p>
               <p className="text-xs text-gray-400 mt-1">{warranties.length} total</p>
             </div>
-            <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-              <ShieldCheck className="w-6 h-6 text-purple-600" />
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+              <ShieldCheck className="w-6 h-6 text-green-600" />
             </div>
           </div>
         </div>
@@ -268,15 +268,15 @@ export const SalesDashboard = ({ stats }) => {
           <ShoppingCart className="w-5 h-5" />
           New Sale
         </Link>
-        <Link to="/sales-repairs" className="p-4 bg-orange-600 text-white rounded-xl hover:bg-orange-700 flex items-center justify-center gap-2 font-medium text-sm shadow">
+        <Link to="/sales-repairs" className="p-4 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center justify-center gap-2 font-medium text-sm shadow">
           <Wrench className="w-5 h-5" />
           Repair Intake
         </Link>
-        <Link to="/customers" className="p-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 flex items-center justify-center gap-2 font-medium text-sm shadow">
+        <Link to="/customers" className="p-4 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center justify-center gap-2 font-medium text-sm shadow">
           <ShieldCheck className="w-5 h-5" />
           Warranties
         </Link>
-        <Link to="/sales-history" className="p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2 font-medium text-sm shadow">
+        <Link to="/sales-history" className="p-4 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center justify-center gap-2 font-medium text-sm shadow">
           <Package className="w-5 h-5" />
           Sales History
         </Link>

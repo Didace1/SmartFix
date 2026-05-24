@@ -12,6 +12,8 @@ import {
 import { PageHeader } from '../../shared/components/Common/PageHeader';
 import { LoadingState } from '../../shared/components/Common/LoadingState';
 import { formatCurrency, formatNumber } from '../../shared/utils/formatters';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const SYSTEM_BACKEND_BASE_URL = process.env.REACT_APP_SYSTEM_BACKEND_URL || 'http://localhost:8080';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
@@ -85,7 +87,7 @@ export const SalesReportsPage = () => {
     filteredSales.forEach(s => {
       const items = s.items || [];
       items.forEach(item => {
-        const cat = item.category || 'Other';
+        const cat = item.category?.name || item.category || 'Other';
         if (!map[cat]) map[cat] = { revenue: 0, count: 0 };
         map[cat].revenue += Number(item.price || 0) * Number(item.quantity || 1);
         map[cat].count += Number(item.quantity || 1);
@@ -161,28 +163,33 @@ export const SalesReportsPage = () => {
     return result;
   }, [sales, dateRange]);
 
-  // Export to CSV
-  const exportToCSV = () => {
-    const headers = ['Date', 'Customer', 'Items', 'Total', 'Payment Method'];
+  // Export to PDF
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.text(`Sales Report - Last ${dateRange} Days`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    const headers = [['Date', 'Customer', 'Items', 'Total', 'Payment Method']];
     const rows = filteredSales.map(sale => [
       sale.createdAt ? new Date(sale.createdAt).toLocaleDateString() : '-',
       sale.customerName || '-',
       (sale.items || []).length,
-      sale.total || 0,
+      formatCurrency(sale.total || 0),
       sale.paymentMethod || '-'
     ]);
     
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+    autoTable(doc, {
+      head: headers,
+      body: rows,
+      startY: 28,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
     
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sales-report-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+    doc.save(`sales-report-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   if (loading) {
@@ -214,11 +221,11 @@ export const SalesReportsPage = () => {
             <option value="365">Last year</option>
           </select>
           <button
-            onClick={exportToCSV}
+            onClick={exportToPDF}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Download className="w-4 h-4" />
-            Export CSV
+            Export PDF
           </button>
         </div>
       </div>

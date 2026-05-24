@@ -102,7 +102,7 @@ export const SalesAnalyticsPage = () => {
     filteredSales.forEach(s => {
       const items = s.items || [];
       items.forEach(item => {
-        const cat = item.category || 'Other';
+        const cat = item.category?.name || item.category || 'Other';
         if (!map[cat]) map[cat] = { revenue: 0, count: 0 };
         map[cat].revenue += Number(item.price || 0) * Number(item.quantity || 1);
         map[cat].count += Number(item.quantity || 1);

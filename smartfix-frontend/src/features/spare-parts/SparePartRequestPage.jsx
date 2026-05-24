@@ -70,7 +70,7 @@ export const SparePartRequestPage = () => {
     if (!q) return inventory;
     return inventory.filter((item) =>
       String(item?.name || '').toLowerCase().includes(q) ||
-      String(item?.category || '').toLowerCase().includes(q) ||
+      String(item?.category?.name || item?.category || '').toLowerCase().includes(q) ||
       String(item?.sku || '').toLowerCase().includes(q)
     );
   }, [inventory, searchTerm]);
@@ -80,7 +80,7 @@ export const SparePartRequestPage = () => {
     if (!q) return filteredInventory;
     return filteredInventory.filter((item) =>
       String(item?.name || '').toLowerCase().includes(q) ||
-      String(item?.category || '').toLowerCase().includes(q) ||
+      String(item?.category?.name || item?.category || '').toLowerCase().includes(q) ||
       String(item?.sku || '').toLowerCase().includes(q)
     );
   }, [filteredInventory, partsSearchTerm]);
@@ -330,7 +330,7 @@ export const SparePartRequestPage = () => {
                   className="w-full text-left border border-gray-200 rounded-lg p-3 hover:border-blue-400 hover:bg-blue-50 transition-colors"
                 >
                   <p className="font-medium text-gray-900">{item.name}</p>
-                  <p className="text-sm text-gray-600">SKU: {item.sku || 'N/A'} | Category: {item.category || 'N/A'}</p>
+                  <p className="text-sm text-gray-600">SKU: {item.sku || 'N/A'} | Category: {item.category?.name || item.category || 'N/A'}</p>
                   <p className="text-sm text-gray-600">Stock: {item.quantity} | Reorder point: {item.reorderPoint}</p>
                 </button>
               ))}

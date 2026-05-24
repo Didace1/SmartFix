@@ -24,7 +24,7 @@ export const StockAlertsPage = () => {
           
           const categoryMap = {};
           lowStockItems.forEach(item => {
-            const category = item.category || 'Uncategorized';
+            const category = item.category?.name || item.category || 'Uncategorized';
             if (!categoryMap[category]) {
               categoryMap[category] = {
                 name: category,

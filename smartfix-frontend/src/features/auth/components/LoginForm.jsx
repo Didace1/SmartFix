@@ -104,7 +104,7 @@ export const LoginForm = () => {
   const CorexLogo = () => (
     <div
       className="inline-flex items-center justify-center px-8 py-4 rounded-2xl shadow-2xl"
-      style={{ backgroundColor: '#c0392b' }}
+      style={{ backgroundColor: '#2563eb' }}
     >
       <span
         style={{ fontFamily: 'Impact, Arial Black, sans-serif', letterSpacing: '0.08em', fontSize: '3rem', color: '#ffffff', fontWeight: 900 }}
@@ -121,37 +121,31 @@ export const LoginForm = () => {
       {/* ── Left: Corex Branded Panel ── */}
       <div
         className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12 relative overflow-hidden"
-        style={{ backgroundColor: '#c0392b' }}
+        style={{ backgroundColor: '#2563eb' }}
       >
-        <div className="absolute top-[-80px] left-[-80px] w-72 h-72 rounded-full opacity-30" style={{ backgroundColor: '#e74c3c' }}></div>
-        <div className="absolute bottom-[-100px] right-[-60px] w-96 h-96 rounded-full opacity-20" style={{ backgroundColor: '#922b21' }}></div>
-        <div className="absolute top-1/3 right-[-40px] w-48 h-48 rounded-full opacity-20" style={{ backgroundColor: '#e74c3c' }}></div>
+        <div className="absolute top-[-80px] left-[-80px] w-72 h-72 rounded-full opacity-30" style={{ backgroundColor: '#3b82f6' }}></div>
+        <div className="absolute bottom-[-100px] right-[-60px] w-96 h-96 rounded-full opacity-20" style={{ backgroundColor: '#1e40af' }}></div>
+        <div className="absolute top-1/3 right-[-40px] w-48 h-48 rounded-full opacity-20" style={{ backgroundColor: '#60a5fa' }}></div>
 
         <div className="relative z-10 text-center">
           <CorexLogo />
-          <h2 className="text-white text-2xl font-bold mt-8 mb-2">Corex Ltd</h2>
-          <p className="text-red-100 text-sm mb-10 max-w-xs leading-relaxed">
-            Smartfix AI-Powered Device Management System — built for precision, speed, and reliability.
-          </p>
         </div>
 
-        <p className="absolute bottom-6 text-red-200 text-xs">&copy; {new Date().getFullYear()} Corex Ltd. All rights reserved.</p>
+        <p className="absolute bottom-6 text-blue-200 text-xs">&copy; {new Date().getFullYear()} Corex Ltd. All rights reserved.</p>
       </div>
 
       {/* ── Right: Login Form ── */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 p-6">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-xl">
 
           {/* Mobile-only logo */}
           <div className="flex flex-col items-center mb-8 lg:hidden">
             <CorexLogo />
-            <p className="text-gray-500 text-sm mt-3">Smartfix AI-Powered Device Management System</p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-8">
-            <div className="mb-7">
-              <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-              <p className="text-gray-500 text-sm mt-1">Sign in to your Corex Ltd account</p>
+          <div className="bg-white rounded-2xl shadow-lg p-10 border-t-8 border-blue-600">
+            <div className="mb-7 text-center">
+              <h1 className="text-4xl font-bold text-gray-900">Login</h1>
             </div>
 
             {!showOtp ? (
@@ -162,10 +156,10 @@ export const LoginForm = () => {
                     <input
                       type="email"
                       {...register('email')}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       placeholder="you@corexltd.com"
                     />
-                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+                    {errors.email && <p className="text-blue-500 text-xs mt-1">{errors.email.message}</p>}
                   </div>
 
                   <div>
@@ -174,7 +168,7 @@ export const LoginForm = () => {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         {...register('password')}
-                        className="w-full px-4 py-2.5 pr-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                        className="w-full px-4 py-2.5 pr-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                         placeholder="••••••••"
                       />
                       <button
@@ -195,7 +189,7 @@ export const LoginForm = () => {
                         )}
                       </button>
                     </div>
-                    {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+                    {errors.password && <p className="text-blue-500 text-xs mt-1">{errors.password.message}</p>}
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -203,14 +197,13 @@ export const LoginForm = () => {
                       <input type="checkbox" {...register('rememberMe')} className="rounded border-gray-300" />
                       Remember me
                     </label>
-                    <a href="/forgot-password" className="text-sm text-red-600 hover:underline">Forgot password?</a>
+                    <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">Forgot password?</a>
                   </div>
 
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full text-white py-2.5 rounded-lg transition disabled:opacity-50 font-semibold text-sm"
-                    style={{ backgroundColor: '#c0392b' }}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg transition disabled:opacity-50 font-semibold text-sm"
                   >
                     {isLoading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -226,14 +219,14 @@ export const LoginForm = () => {
 
                 <div className="mt-6 text-center text-sm text-gray-500">
                   Don't have an account?{' '}
-                  <a href="/register" className="text-red-600 font-medium hover:underline">Create account</a>
+                  <a href="/register" className="text-blue-600 font-medium hover:underline">Create account</a>
                 </div>
               </>
             ) : (
               <div className="space-y-5">
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4" style={{ backgroundColor: '#fef3c7' }}>
-                    <svg className="w-7 h-7" style={{ color: '#d97706' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4" style={{ backgroundColor: '#dbeafe' }}>
+                    <svg className="w-7 h-7" style={{ color: '#2563eb' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
@@ -253,7 +246,7 @@ export const LoginForm = () => {
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     onKeyDown={(e) => e.key === 'Enter' && handleOtpSubmit()}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-3xl font-mono tracking-[0.4em] focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-3xl font-mono tracking-[0.4em] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="——————"
                     autoFocus
                   />
@@ -262,15 +255,15 @@ export const LoginForm = () => {
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span>
                     {countdown > 0 ? (
-                      <>Expires in <span className="font-mono font-semibold text-red-600">{formatCountdown(countdown)}</span></>
+                      <>Expires in <span className="font-mono font-semibold text-blue-600">{formatCountdown(countdown)}</span></>
                     ) : (
-                      <span className="text-red-500 font-medium">OTP expired</span>
+                      <span className="text-blue-500 font-medium">OTP expired</span>
                     )}
                   </span>
                   <button
                     type="button"
                     onClick={handleResendOtp}
-                    className="text-red-600 font-medium hover:underline"
+                    className="text-blue-600 font-medium hover:underline"
                   >
                     Resend OTP
                   </button>
@@ -279,8 +272,7 @@ export const LoginForm = () => {
                 <button
                   onClick={handleOtpSubmit}
                   disabled={isVerifying || otpCode.length < 6 || countdown === 0}
-                  className="w-full text-white py-2.5 rounded-lg transition font-semibold disabled:opacity-50"
-                  style={{ backgroundColor: '#c0392b' }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg transition font-semibold disabled:opacity-50"
                 >
                   {isVerifying ? (
                     <span className="flex items-center justify-center gap-2">

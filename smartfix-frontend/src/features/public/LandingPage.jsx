@@ -75,17 +75,27 @@ export const LandingPage = () => {
     return iconMap[category] || Smartphone;
   };
 
+  const getDeviceCategoryName = (device) => {
+    if (!device) return '';
+    if (typeof device.category === 'string') return device.category;
+    if (device.category && typeof device.category === 'object') {
+      return device.category.name || '';
+    }
+    return '';
+  };
+
   const filteredDevices = devices.filter(device => {
-    const matchesCategory = selectedCategory === 'All' || device.category === selectedCategory;
+    const deviceCategory = getDeviceCategoryName(device);
+    const matchesCategory = selectedCategory === 'All' || deviceCategory === selectedCategory;
     const matchesSearch = device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         device.category.toLowerCase().includes(searchTerm.toLowerCase());
+                         deviceCategory.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Bar */}
-      <nav className="shadow-lg border-b-2 border-red-800 sticky top-0 z-50" style={{ minHeight: '64px', backgroundColor: '#c0392b' }}>
+      <nav className="bg-blue-600 shadow-lg border-b-2 border-blue-700 sticky top-0 z-50" style={{ minHeight: '64px' }}>
         <div className="w-full px-0">
           <div className="flex justify-between items-center h-16">
             {/* Logo Only - Far Left Corner */}
@@ -95,7 +105,7 @@ export const LandingPage = () => {
                   fontFamily: 'Arial, sans-serif', 
                   letterSpacing: '0.1em', 
                   fontSize: '1.1rem',
-                  color: '#c0392b', 
+                  color: '#2563eb', 
                   fontWeight: 'bold' 
                 }}>
                   COREX
@@ -105,21 +115,21 @@ export const LandingPage = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8 pr-4 sm:pr-6 lg:pr-8">
-              <a href="#home" className="text-white hover:text-red-200 font-medium transition-colors">
+              <a href="#home" className="text-white hover:text-blue-200 font-medium transition-colors">
                 Home
               </a>
-              <a href="#devices" className="text-white hover:text-red-200 font-medium transition-colors">
+              <a href="#devices" className="text-white hover:text-blue-200 font-medium transition-colors">
                 Devices
               </a>
-              <a href="#services" className="text-white hover:text-red-200 font-medium transition-colors">
+              <a href="#services" className="text-white hover:text-blue-200 font-medium transition-colors">
                 Services
               </a>
-              <a href="#contact" className="text-white hover:text-red-200 font-medium transition-colors">
+              <a href="#contact" className="text-white hover:text-blue-200 font-medium transition-colors">
                 Contact
               </a>
               <Link 
                 to="/login" 
-                className="bg-white text-red-600 px-6 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                className="bg-white text-blue-600 px-6 py-2 rounded-lg hover:bg-blue-50 transition-colors font-medium"
               >
                 Staff Login
               </Link>
@@ -129,7 +139,7 @@ export const LandingPage = () => {
             <div className="md:hidden pr-4">
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="text-white hover:text-red-200 focus:outline-none"
+                className="text-white hover:text-blue-200 focus:outline-none"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -140,39 +150,39 @@ export const LandingPage = () => {
 
           {/* Mobile Menu */}
           {showMobileMenu && (
-            <div className="md:hidden border-t border-red-800 py-4 px-4" style={{ backgroundColor: '#c0392b' }}>
+            <div className="md:hidden bg-blue-600 border-t border-blue-700 py-4 px-4">
               <div className="flex flex-col space-y-4">
                 <a 
                   href="#home" 
-                  className="text-white hover:text-red-200 font-medium transition-colors px-2 py-1"
+                  className="text-white hover:text-blue-200 font-medium transition-colors px-2 py-1"
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Home
                 </a>
                 <a 
                   href="#devices" 
-                  className="text-white hover:text-red-200 font-medium transition-colors px-2 py-1"
+                  className="text-white hover:text-blue-200 font-medium transition-colors px-2 py-1"
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Devices
                 </a>
                 <a 
                   href="#services" 
-                  className="text-white hover:text-red-200 font-medium transition-colors px-2 py-1"
+                  className="text-white hover:text-blue-200 font-medium transition-colors px-2 py-1"
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Services
                 </a>
                 <a 
                   href="#contact" 
-                  className="text-white hover:text-red-200 font-medium transition-colors px-2 py-1"
+                  className="text-white hover:text-blue-200 font-medium transition-colors px-2 py-1"
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Contact
                 </a>
                 <Link 
                   to="/login" 
-                  className="bg-white text-red-600 px-6 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium text-center mx-2"
+                  className="bg-white text-blue-600 px-6 py-2 rounded-lg hover:bg-blue-50 transition-colors font-medium text-center mx-2"
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Staff Login
@@ -184,7 +194,7 @@ export const LandingPage = () => {
       </nav>
 
       {/* Hero Section with Device Images */}
-      <section id="home" className="text-white py-20 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #c0392b 0%, #a93226 100%)' }}>
+      <section id="home" className="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-20 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
@@ -192,14 +202,14 @@ export const LandingPage = () => {
               <h1 className="text-4xl md:text-6xl font-bold mb-6">
                 Welcome to Corex Ltd
               </h1>
-              <p className="text-xl md:text-2xl mb-8 text-red-100">
+              <p className="text-xl md:text-2xl mb-8 text-blue-100">
                 Your trusted partner for electronic devices and professional repair services
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <a href="#devices" className="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                <a href="#devices" className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
                   Browse Devices
                 </a>
-                <a href="#services" className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-red-600 transition-colors">
+                <a href="#services" className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
                   Our Services
                 </a>
               </div>
@@ -214,7 +224,7 @@ export const LandingPage = () => {
                     <Smartphone className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-center mb-2">Smartphones</h3>
-                  <p className="text-red-100 text-sm text-center">Latest iPhone & Android devices</p>
+                  <p className="text-blue-100 text-sm text-center">Latest iPhone & Android devices</p>
                 </div>
 
                 {/* Smartwatch */}
@@ -223,7 +233,7 @@ export const LandingPage = () => {
                     <Watch className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-center mb-2">Smartwatches</h3>
-                  <p className="text-red-100 text-sm text-center">Apple Watch & fitness trackers</p>
+                  <p className="text-blue-100 text-sm text-center">Apple Watch & fitness trackers</p>
                 </div>
 
                 {/* Laptops */}
@@ -232,7 +242,7 @@ export const LandingPage = () => {
                     <Laptop className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-center mb-2">Laptops</h3>
-                  <p className="text-red-100 text-sm text-center">MacBooks & Windows laptops</p>
+                  <p className="text-blue-100 text-sm text-center">MacBooks & Windows laptops</p>
                 </div>
 
                 {/* Accessories */}
@@ -241,7 +251,7 @@ export const LandingPage = () => {
                     <Headphones className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-lg font-semibold text-center mb-2">Accessories</h3>
-                  <p className="text-red-100 text-sm text-center">Cases, chargers & more</p>
+                  <p className="text-blue-100 text-sm text-center">Cases, chargers & more</p>
                 </div>
               </div>
 
@@ -378,7 +388,8 @@ export const LandingPage = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredDevices.map((device) => {
-                const IconComponent = getCategoryIcon(device.category);
+                const deviceCategory = getDeviceCategoryName(device);
+                const IconComponent = getCategoryIcon(deviceCategory);
                 return (
                   <div key={device.id} className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-blue-200">
                     {/* Device Image Placeholder */}
@@ -395,7 +406,7 @@ export const LandingPage = () => {
                     <div className="p-6">
                       <div className="mb-4">
                         <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">{device.name}</h3>
-                        <p className="text-sm text-gray-500">{device.category}</p>
+                        <p className="text-sm text-gray-500">{deviceCategory || 'N/A'}</p>
                       </div>
                       
                       <div className="flex items-center justify-between mb-4">
@@ -540,7 +551,7 @@ export const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-3 mb-4 md:mb-0">
-              <div className="flex items-center justify-center px-3 py-1 rounded-lg" style={{ backgroundColor: '#c0392b' }}>
+              <div className="flex items-center justify-center px-3 py-1 bg-blue-600 rounded-lg">
                 <span style={{ fontFamily: 'Impact, Arial Black, sans-serif', letterSpacing: '0.06em', fontSize: '1rem', color: '#fff', fontWeight: 900 }}>
                   COREX
                 </span>

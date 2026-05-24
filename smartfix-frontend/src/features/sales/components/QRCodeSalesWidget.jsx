@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { QrCode, Scan, Keyboard, Camera } from 'lucide-react';
-import { SimplifiedQRScanner } from './SimplifiedQRScanner';
+import { QrCode, Scan, Camera } from 'lucide-react';
 import { CameraQRScanner } from './CameraQRScanner';
 import { qrCodeService } from '../../../shared/services/qrCodeService';
 import toast from 'react-hot-toast';
 
 export const QRCodeSalesWidget = ({ onProductScanned }) => {
-  const [showManualScanner, setShowManualScanner] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -21,7 +19,6 @@ export const QRCodeSalesWidget = ({ onProductScanned }) => {
           onProductScanned(result.product);
         }
         toast.success(`${result.product.name} added to cart!`);
-        setShowManualScanner(false);
         setShowCameraScanner(false);
       } else {
         toast.error('Product not found for this QR code');
@@ -44,37 +41,25 @@ export const QRCodeSalesWidget = ({ onProductScanned }) => {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Quick Scan</h3>
-            <p className="text-sm text-gray-600">Choose your scanning method</p>
           </div>
         </div>
       </div>
 
-      {/* Two Scan Options */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      {/* Scan Option */}
+      <div className="mb-4">
         {/* Camera Scan Button */}
         <button
           onClick={() => setShowCameraScanner(true)}
           disabled={isProcessing}
-          className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg hover:from-blue-100 hover:to-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all group"
+          className="w-full flex items-center justify-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg hover:from-blue-100 hover:to-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all group space-x-4"
         >
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <Camera className="w-8 h-8 text-white" />
+          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+            <Camera className="w-6 h-6 text-white" />
           </div>
-          <span className="font-semibold text-blue-900 text-center">Scan with Camera</span>
-          <span className="text-xs text-blue-700 mt-1 text-center">Use device camera</span>
-        </button>
-
-        {/* Manual Entry Button */}
-        <button
-          onClick={() => setShowManualScanner(true)}
-          disabled={isProcessing}
-          className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg hover:from-green-100 hover:to-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all group"
-        >
-          <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <Keyboard className="w-8 h-8 text-white" />
+          <div className="text-left">
+            <div className="font-semibold text-blue-900">Scan with Camera</div>
+            <div className="text-sm text-blue-700 mt-0.5">Use device camera</div>
           </div>
-          <span className="font-semibold text-green-900 text-center">Enter Code Manually</span>
-          <span className="text-xs text-green-700 mt-1 text-center">Type or use USB scanner</span>
         </button>
       </div>
 
@@ -87,20 +72,10 @@ export const QRCodeSalesWidget = ({ onProductScanned }) => {
         />
       )}
 
-      {/* Manual Scanner Modal */}
-      {showManualScanner && (
-        <SimplifiedQRScanner
-          isOpen={showManualScanner}
-          onClose={() => setShowManualScanner(false)}
-          onScan={handleScan}
-        />
-      )}
-
       {/* Instructions */}
       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
         <p className="text-sm text-gray-600">
-          <strong>Quick Tip:</strong> Scan product QR codes to quickly add items to your sale. 
-          You can also use manual input if camera scanning is not available.
+          <strong>Quick Tip:</strong> Scan product QR codes to quickly add items to your sale.
         </p>
       </div>
     </div>
