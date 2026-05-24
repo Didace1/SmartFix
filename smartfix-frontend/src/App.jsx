@@ -12,10 +12,13 @@ import { FailurePredictionPage } from './features/failure-prediction/FailurePred
 import { InventoryPage } from './features/inventory/InventoryPage';
 import { StockAlertsPage } from './features/inventory/StockAlertsPage';
 import { StockViewPage } from './features/inventory/StockViewPage';
+import { StockOutPage } from './features/inventory/StockOutPage';
+import { CustomerRequestsPage } from './features/inventory/CustomerRequestsPage';
 import { AIRecommendationsPage } from './features/inventory/AIRecommendationsPage';
 import { QRCodeManagementPage } from './features/inventory/QRCodeManagementPage';
 import { InventoryReportsPage } from './features/inventory/InventoryReportsPage';
 import { SalesPage } from './features/sales/SalesPage';
+import { BrowseProductsPage } from './features/sales/BrowseProductsPage';
 import { SalesRepairPage } from './features/sales/SalesRepairPage';
 import { SalesAnalyticsPage } from './features/sales/SalesAnalyticsPage';
 import { SalesHistoryPage } from './features/sales/SalesHistoryPage';
@@ -29,6 +32,8 @@ import { SparePartRequestPage } from './features/spare-parts/SparePartRequestPag
 import { RepairTasksPage } from './features/repair-tasks/RepairTasksPage';
 import { RepairAnalyticsPage } from './features/repair-tasks/RepairAnalyticsPage';
 import { RepairHistoryPage } from './features/repair-tasks/RepairHistoryPage';
+import AITechnicianAssistantPage from './features/technician/assistant/AITechnicianAssistantPage';
+import { TechnicianPerformancePage } from './features/performance/TechnicianPerformancePage';
 import { RoleBasedNavbar } from './shared/components/Navigation/RoleBasedNavbar';
 import { AdminLayout } from './shared/components/Layout/AdminLayout';
 import { InventoryLayout } from './shared/components/Layout/InventoryLayout';
@@ -42,6 +47,7 @@ import { PendingUsersPage } from './features/admin/PendingUsersPage';
 import { UsersPage } from './features/admin/UsersPage';
 import { CategoryManagementPage } from './features/admin/CategoryManagementPage';
 import { QRCodeTest } from './features/test/QRCodeTest';
+import { ProfilePage } from './features/profile/ProfilePage';
 
 const AppLayout = () => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -134,25 +140,27 @@ const AppLayout = () => {
           </RoleBasedRoute>
         } />
 
-        {/* Diagnosis - Admin gets sidebar, technician gets technician layout */}
-        <Route path="/diagnosis" element={
+        {/* AI Assistant - Admin gets sidebar, technician gets technician layout */}
+        <Route path="/ai-assistant" element={
           <RoleBasedRoute allowedRoles={['admin', 'technician']}>
             {isAdmin ? (
               <AdminLayout>
-                {/* We need to create or import DiagnosisPage */}
-                <div className="p-6">
-                  <h1 className="text-2xl font-bold text-gray-900">Fault Diagnosis</h1>
-                  <p className="text-gray-600 mt-2">AI-powered device fault diagnosis system.</p>
-                </div>
+                <AITechnicianAssistantPage />
               </AdminLayout>
             ) : (
               <TechnicianLayout>
-                <div className="p-6">
-                  <h1 className="text-2xl font-bold text-gray-900">Fault Diagnosis</h1>
-                  <p className="text-gray-600 mt-2">AI-powered device fault diagnosis system.</p>
-                </div>
+                <AITechnicianAssistantPage />
               </TechnicianLayout>
             )}
+          </RoleBasedRoute>
+        } />
+
+        {/* Performance Dashboard - Admin only with sidebar */}
+        <Route path="/performance" element={
+          <RoleBasedRoute allowedRoles={['admin']}>
+            <AdminLayout>
+              <TechnicianPerformancePage />
+            </AdminLayout>
           </RoleBasedRoute>
         } />
 
@@ -223,12 +231,46 @@ const AppLayout = () => {
             )}
           </RoleBasedRoute>
         } />
-        <Route path="/inventory/view" element={
+        <Route path="/inventory/stock-out" element={
           <RoleBasedRoute allowedRoles={['admin', 'inventory']}>
+            {isAdmin ? (
+              <AdminLayout>
+                <StockOutPage />
+              </AdminLayout>
+            ) : (
+              <InventoryLayout>
+                <StockOutPage />
+              </InventoryLayout>
+            )}
+          </RoleBasedRoute>
+        } />
+        <Route path="/inventory/customer-requests" element={
+          <RoleBasedRoute allowedRoles={['admin', 'inventory', 'sales']}>
+            {isAdmin ? (
+              <AdminLayout>
+                <CustomerRequestsPage />
+              </AdminLayout>
+            ) : isSales ? (
+              <SalesLayout>
+                <CustomerRequestsPage />
+              </SalesLayout>
+            ) : (
+              <InventoryLayout>
+                <CustomerRequestsPage />
+              </InventoryLayout>
+            )}
+          </RoleBasedRoute>
+        } />
+        <Route path="/inventory/view" element={
+          <RoleBasedRoute allowedRoles={['admin', 'inventory', 'sales']}>
             {isAdmin ? (
               <AdminLayout>
                 <StockViewPage />
               </AdminLayout>
+            ) : isSales ? (
+              <SalesLayout>
+                <StockViewPage />
+              </SalesLayout>
             ) : (
               <InventoryLayout>
                 <StockViewPage />
@@ -287,6 +329,20 @@ const AppLayout = () => {
             ) : (
               <SalesLayout>
                 <SalesPage />
+              </SalesLayout>
+            )}
+          </RoleBasedRoute>
+        } />
+
+        <Route path="/sales/browse-products" element={
+          <RoleBasedRoute allowedRoles={['admin', 'sales']}>
+            {isAdmin ? (
+              <AdminLayout>
+                <BrowseProductsPage />
+              </AdminLayout>
+            ) : (
+              <SalesLayout>
+                <BrowseProductsPage />
               </SalesLayout>
             )}
           </RoleBasedRoute>
@@ -411,6 +467,31 @@ const AppLayout = () => {
 
         {/* Test Routes - For development and testing */}
         <Route path="/test/qrcode" element={<QRCodeTest />} />
+
+        {/* Profile Settings - Available for all authenticated users */}
+        <Route path="/profile" element={
+          <RoleBasedRoute allowedRoles={['admin', 'sales', 'inventory', 'technician']}>
+            {isAdmin ? (
+              <AdminLayout>
+                <ProfilePage />
+              </AdminLayout>
+            ) : isInventory ? (
+              <InventoryLayout>
+                <ProfilePage />
+              </InventoryLayout>
+            ) : isSales ? (
+              <SalesLayout>
+                <ProfilePage />
+              </SalesLayout>
+            ) : isTechnician ? (
+              <TechnicianLayout>
+                <ProfilePage />
+              </TechnicianLayout>
+            ) : (
+              <ProfilePage />
+            )}
+          </RoleBasedRoute>
+        } />
       </Routes>
     </div>
   );
