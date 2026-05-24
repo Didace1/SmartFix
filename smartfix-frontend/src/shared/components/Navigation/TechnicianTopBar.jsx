@@ -147,12 +147,6 @@ export const TechnicianTopBar = () => {
       icon: BookOpen,
       action: () => navigate('/technician/repair-knowledge'),
       color: 'text-green-600'
-    },
-    {
-      label: 'AI Assistant',
-      icon: ClipboardList,
-      action: () => navigate('/technician/ai-assistant'),
-      color: 'text-purple-600'
     }
   ];
 

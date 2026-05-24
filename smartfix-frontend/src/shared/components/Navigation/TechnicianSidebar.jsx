@@ -5,8 +5,7 @@ import {
   Wrench,
   Bell,
   LogOut,
-  User,
-  Brain
+  User
 } from 'lucide-react';
 
 export const TechnicianSidebar = () => {
@@ -26,7 +25,6 @@ export const TechnicianSidebar = () => {
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/my-repair-tasks', icon: Wrench, label: 'My Repair Tasks' },
-    { path: '/ai-assistant', icon: Brain, label: 'AI Assistant' },
     { path: '/notifications', icon: Bell, label: 'Notifications' },
   ];
 

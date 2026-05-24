@@ -140,21 +140,6 @@ const AppLayout = () => {
           </RoleBasedRoute>
         } />
 
-        {/* AI Assistant - Admin gets sidebar, technician gets technician layout */}
-        <Route path="/ai-assistant" element={
-          <RoleBasedRoute allowedRoles={['admin', 'technician']}>
-            {isAdmin ? (
-              <AdminLayout>
-                <AITechnicianAssistantPage />
-              </AdminLayout>
-            ) : (
-              <TechnicianLayout>
-                <AITechnicianAssistantPage />
-              </TechnicianLayout>
-            )}
-          </RoleBasedRoute>
-        } />
-
         {/* Performance Dashboard - Admin only with sidebar */}
         <Route path="/performance" element={
           <RoleBasedRoute allowedRoles={['admin']}>
