@@ -224,7 +224,7 @@ export const QRCodeDisplay = ({
             {inventoryItem.category && (
               <div>
                 <span className="text-blue-700 font-medium">Category:</span>
-                <span className="text-blue-800 ml-1">{inventoryItem.category}</span>
+                <span className="text-blue-800 ml-1">{inventoryItem.category?.name || inventoryItem.category || 'N/A'}</span>
               </div>
             )}
             <div>

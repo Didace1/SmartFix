@@ -82,35 +82,7 @@ export const SalesTopBar = () => {
 
         {/* Right side - Actions and User Menu */}
         <div className="flex items-center space-x-4">
-          {/* Quick Actions */}
-          <div className="relative">
-            <button
-              onClick={() => setShowQuickActions(!showQuickActions)}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span>Quick Actions</span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
 
-            {showQuickActions && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                {quickActions.map((action) => {
-                  const Icon = action.icon;
-                  return (
-                    <button
-                      key={action.path}
-                      onClick={() => handleQuickAction(action.path)}
-                      className={`w-full flex items-center px-4 py-2 text-sm transition-colors ${action.color}`}
-                    >
-                      <Icon className="w-4 h-4 mr-3" />
-                      {action.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
 
           {/* Notifications */}
           <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
@@ -147,12 +119,24 @@ export const SalesTopBar = () => {
                   <p className="text-xs text-gray-500">{user?.email}</p>
                 </div>
                 
-                <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    navigate('/profile');
+                  }}
+                  className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
                   <User className="w-4 h-4 mr-3" />
                   Profile
                 </button>
                 
-                <button className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    navigate('/profile');
+                  }}
+                  className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
                   <Settings className="w-4 h-4 mr-3" />
                   Settings
                 </button>

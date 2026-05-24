@@ -147,6 +147,17 @@ export const QRCodeScanner = ({
     }
   }, [isOpen, scanMode, getCameras]);
 
+  // Auto-start scanning when camera is selected
+  useEffect(() => {
+    if (isOpen && scanMode === 'camera' && selectedCamera && !isScanning && !error && !isLoading) {
+      // Auto-start scanning after a short delay
+      const timer = setTimeout(() => {
+        startHtml5Scanner();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, scanMode, selectedCamera, isScanning, error, isLoading, startHtml5Scanner]);
+
   // Safe DOM cleanup function
   const safeDOMCleanup = useCallback(() => {
     try {

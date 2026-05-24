@@ -109,7 +109,7 @@ export const RoleBasedNavbar = () => {
               type: 'repair-completed',
               title: `Repair completed for ${task.deviceType || 'device'}${task.deviceModel ? ` — ${task.deviceModel}` : ''}`,
               detail: 'The salesperson can now update the customer for pickup or next step.',
-              actionLabel: 'Open Sales Repairs',
+              actionLabel: 'Open Repair Tasks',
               actionPath: '/sales-repairs'
             });
           }
@@ -337,7 +337,7 @@ export const RoleBasedNavbar = () => {
     },
     {
       path: '/sales-repairs',
-      label: 'Sales Repairs',
+      label: 'Repair Tasks',
       icon: '🧰',
       roles: ['admin', 'sales']
     },
@@ -390,7 +390,7 @@ export const RoleBasedNavbar = () => {
         { path: '/sales', label: 'Sales', icon: '💰' },
         { path: '/sales-history', label: 'Sales History', icon: '📋' },
         { path: '/sales-analytics', label: 'Sales Analytics', icon: '📊' },
-        { path: '/sales-repairs', label: 'Sales Repairs', icon: '🧰' },
+        { path: '/sales-repairs', label: 'Repair Tasks', icon: '🧰' },
         { path: '/customers', label: 'Customers', icon: '👥' },
       ]
     },
@@ -695,44 +695,7 @@ export const RoleBasedNavbar = () => {
                 )}
               </div>
             )}
-            {['admin','inventory'].includes(user?.role) && (
-              <div className="relative" ref={quickActionsRef}>
-                <button
-                  onClick={() => setShowQuickActions((prev) => !prev)}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 flex items-center"
-                >
-                  <PlusCircle className="w-4 h-4 mr-2" />
-                  Quick Actions
-                </button>
-                {showQuickActions && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
-                    <div className="py-1">
-                      <button
-                        onClick={() => { setShowQuickActions(false); navigate('/inventory?addStock=1'); }}
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
-                      >
-                        <PlusCircle className="w-4 h-4 mr-2 text-blue-600" />
-                        Add Stock
-                      </button>
-                      <button
-                        onClick={() => { setShowQuickActions(false); navigate('/inventory/stock-alerts'); }}
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
-                      >
-                        <AlertTriangle className="w-4 h-4 mr-2 text-yellow-600" />
-                        Review Stock Alerts
-                      </button>
-                      <button
-                        onClick={() => { setShowQuickActions(false); navigate('/inventory/view'); }}
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
-                      >
-                        <Package className="w-4 h-4 mr-2 text-gray-700" />
-                        View Stock
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+
             <div className="flex items-center gap-2.5">
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0"

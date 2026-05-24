@@ -16,13 +16,16 @@ import {
   UserCheck, 
   Tags, 
   FileText,
+  BookOpen,
   Clock, 
   TrendingUp, 
-  Zap,
   User,
   AlertTriangle,
   Bell,
-  QrCode
+  QrCode,
+  Brain,
+  Eye,
+  PackageX
 } from 'lucide-react';
 
 export const AdminSidebar = () => {
@@ -57,18 +60,6 @@ export const AdminSidebar = () => {
           label: 'Dashboard', 
           icon: LayoutDashboard,
           description: 'Overview & Analytics'
-        },
-        { 
-          path: '/diagnosis', 
-          label: 'Fault Diagnosis', 
-          icon: Search,
-          description: 'AI-Powered Diagnostics'
-        },
-        { 
-          path: '/failure-prediction', 
-          label: 'Failure Prediction', 
-          icon: Zap,
-          description: 'Predictive Analytics'
         }
       ]
     },
@@ -77,13 +68,25 @@ export const AdminSidebar = () => {
       label: 'Repair Management',
       icon: Wrench,
       expandable: true,
-      paths: ['/technicians', '/repair-analytics', '/repair-history', '/spare-part-requests', '/my-repair-tasks'],
+      paths: ['/technicians', '/repair-analytics', '/repair-history', '/spare-part-requests', '/my-repair-tasks', '/ai-assistant', '/performance'],
       items: [
         { 
           path: '/my-repair-tasks', 
           label: 'Active Tasks', 
           icon: Clock,
           description: 'Current repair tasks'
+        },
+        { 
+          path: '/ai-assistant', 
+          label: 'AI Assistant', 
+          icon: Brain,
+          description: 'Technician AI support'
+        },
+        { 
+          path: '/performance', 
+          label: 'Performance', 
+          icon: TrendingUp,
+          description: 'Technician metrics'
         },
         { 
           path: '/repair-history', 
@@ -94,7 +97,7 @@ export const AdminSidebar = () => {
         { 
           path: '/repair-analytics', 
           label: 'Analytics', 
-          icon: TrendingUp,
+          icon: BarChart3,
           description: 'Performance metrics'
         },
         { 
@@ -125,6 +128,18 @@ export const AdminSidebar = () => {
           description: 'Add & edit inventory'
         },
         { 
+          path: '/inventory/stock-out', 
+          label: 'Stock Out Items', 
+          icon: PackageX,
+          description: 'Out of stock products'
+        },
+        { 
+          path: '/inventory/customer-requests', 
+          label: 'Customer Requests', 
+          icon: Users,
+          description: 'Requested products'
+        },
+        { 
           path: '/inventory/stock-alerts', 
           label: 'Stock Alerts', 
           icon: AlertTriangle,
@@ -133,14 +148,26 @@ export const AdminSidebar = () => {
         { 
           path: '/inventory/view', 
           label: 'View Stock', 
-          icon: FileText,
+          icon: Eye,
           description: 'Browse inventory'
+        },
+        { 
+          path: '/inventory/ai-recommendations', 
+          label: 'AI Recommendations', 
+          icon: Brain,
+          description: 'Smart stock planning'
         },
         { 
           path: '/inventory/qrcodes', 
           label: 'QR Codes', 
           icon: QrCode,
           description: 'Manage QR codes'
+        },
+        { 
+          path: '/inventory/reports', 
+          label: 'Inventory Reports', 
+          icon: BarChart3,
+          description: 'Stock analytics'
         }
       ]
     },
@@ -153,7 +180,7 @@ export const AdminSidebar = () => {
       items: [
         { 
           path: '/sales', 
-          label: 'Point of Sale', 
+          label: 'New Sale', 
           icon: ShoppingCart,
           description: 'Process sales'
         },
@@ -171,15 +198,15 @@ export const AdminSidebar = () => {
         },
         { 
           path: '/sales-repairs', 
-          label: 'Sales Repairs', 
+          label: 'Repair Tasks', 
           icon: Wrench,
           description: 'Repair coordination'
         },
         { 
           path: '/customers', 
-          label: 'Customers', 
+          label: 'Warranties', 
           icon: Users,
-          description: 'Customer management'
+          description: 'Warranty management'
         }
       ]
     },

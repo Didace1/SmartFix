@@ -27,16 +27,16 @@ export const StatCard = ({ label, value, accent = 'text-blue-600', icon, subtitl
   const borderColor = ACCENT_TO_BORDER[accent] || 'border-gray-300';
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 ${borderColor} p-5 hover:shadow-md transition-shadow duration-200`}>
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 ${borderColor} p-6 hover:shadow-lg transition-shadow duration-200`}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{label}</p>
-          <p className={`text-3xl font-bold ${accent} leading-none`}>{value}</p>
-          {subtitle && <p className="text-xs text-gray-400 mt-1.5">{subtitle}</p>}
+          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">{label}</p>
+          <p className={`text-4xl font-bold ${accent} leading-none`}>{value}</p>
+          {subtitle && <p className="text-sm text-gray-500 mt-2 font-medium">{subtitle}</p>}
         </div>
         {icon && (
-          <div className={`ml-3 flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center ${iconBg}`}>
-            {icon}
+          <div className={`ml-4 flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center ${iconBg}`}>
+            {React.cloneElement(icon, { className: 'w-7 h-7' })}
           </div>
         )}
       </div>

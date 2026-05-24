@@ -3,10 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Wrench,
-  ClipboardList,
   Bell,
   LogOut,
-  User
+  User,
+  Brain
 } from 'lucide-react';
 
 export const TechnicianSidebar = () => {
@@ -26,7 +26,7 @@ export const TechnicianSidebar = () => {
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/my-repair-tasks', icon: Wrench, label: 'My Repair Tasks' },
-    { path: '/diagnosis', icon: ClipboardList, label: 'Diagnosis' },
+    { path: '/ai-assistant', icon: Brain, label: 'AI Assistant' },
     { path: '/notifications', icon: Bell, label: 'Notifications' },
   ];
 
