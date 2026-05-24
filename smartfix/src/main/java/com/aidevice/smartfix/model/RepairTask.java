@@ -29,6 +29,7 @@ public class RepairTask {
     private Diagnosis diagnosis;
 
     private String deviceType;
+    private String deviceBrand;
     private String deviceModel;
 
     @Column(columnDefinition = "TEXT")
@@ -48,6 +49,10 @@ public class RepairTask {
     private LocalDateTime createdAt;
 
     private LocalDateTime assignedAt;
+    
+    private LocalDateTime completedAt;
+    
+    private LocalDateTime startedAt;
 
     @PrePersist
     void prePersist() {

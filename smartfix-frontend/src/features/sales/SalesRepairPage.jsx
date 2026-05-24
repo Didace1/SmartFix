@@ -24,6 +24,7 @@ export const SalesRepairPage = () => {
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [newTask, setNewTask] = useState({
     deviceType: '',
+    deviceBrand: '',
     deviceModel: '',
     repairNote: '',
     technicianId: ''
@@ -69,6 +70,7 @@ export const SalesRepairPage = () => {
   const handleCreateTask = async (intake) => {
     const payload = {
       deviceType: intake?.serviceContext?.deviceType || intake?.deviceType || '',
+      deviceBrand: intake?.serviceContext?.deviceBrand || intake?.deviceBrand || '',
       deviceModel: intake?.serviceContext?.deviceModel || intake?.deviceModel || '',
       repairNote: intake?.serviceContext?.repairNote || intake?.repairNote || ''
     };
@@ -97,6 +99,7 @@ export const SalesRepairPage = () => {
     }
     const payload = {
       deviceType: newTask.deviceType,
+      deviceBrand: newTask.deviceBrand,
       deviceModel: newTask.deviceModel,
       repairNote: newTask.repairNote
     };
@@ -125,7 +128,7 @@ export const SalesRepairPage = () => {
     } catch {
       toast.error('Backend not reachable');
     }
-    setNewTask({ deviceType: '', deviceModel: '', repairNote: '', technicianId: '' });
+    setNewTask({ deviceType: '', deviceBrand: '', deviceModel: '', repairNote: '', technicianId: '' });
     setShowNewTaskForm(false);
   };
 
@@ -133,6 +136,7 @@ export const SalesRepairPage = () => {
     const techId = intakeTechPick[idx] || '';
     const payload = {
       deviceType: intake?.serviceContext?.deviceType || intake?.deviceType || '',
+      deviceBrand: intake?.serviceContext?.deviceBrand || intake?.deviceBrand || '',
       deviceModel: intake?.serviceContext?.deviceModel || intake?.deviceModel || '',
       repairNote: intake?.serviceContext?.repairNote || intake?.repairNote || ''
     };
@@ -255,7 +259,8 @@ export const SalesRepairPage = () => {
                   <div className="text-sm">
                     <p className="font-medium text-gray-800">
                       {intake.serviceContext?.deviceType || 'Unknown Device'}
-                      {intake.serviceContext?.deviceModel ? ` — ${intake.serviceContext.deviceModel}` : ''}
+                      {intake.serviceContext?.deviceBrand ? ` — ${intake.serviceContext.deviceBrand}` : ''}
+                      {intake.serviceContext?.deviceModel ? ` ${intake.serviceContext.deviceModel}` : ''}
                     </p>
                     <p className="text-gray-500 text-xs mt-0.5">{intake.serviceContext?.repairNote || 'No note'}</p>
                   </div>
@@ -303,7 +308,7 @@ export const SalesRepairPage = () => {
           <div className="mt-3 bg-white rounded-lg shadow p-5 border max-w-xl">
             <h3 className="font-semibold text-gray-900 mb-4">Create Repair Task</h3>
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Device Type *</label>
                   <input
@@ -315,10 +320,20 @@ export const SalesRepairPage = () => {
                   />
                 </div>
                 <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Device Brand</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. HP, Apple"
+                    value={newTask.deviceBrand}
+                    onChange={(e) => setNewTask({ ...newTask, deviceBrand: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Device Model</label>
                   <input
                     type="text"
-                    placeholder="e.g. HP EliteBook"
+                    placeholder="e.g. EliteBook"
                     value={newTask.deviceModel}
                     onChange={(e) => setNewTask({ ...newTask, deviceModel: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg text-sm"
@@ -401,7 +416,8 @@ export const SalesRepairPage = () => {
                       </div>
                       <p className="font-semibold text-gray-900">
                         {task.deviceType || 'Unknown Device'}
-                        {task.deviceModel ? ` — ${task.deviceModel}` : ''}
+                        {task.deviceBrand ? ` — ${task.deviceBrand}` : ''}
+                        {task.deviceModel ? ` ${task.deviceModel}` : ''}
                       </p>
                       <p className="text-xs text-gray-500">
                         Created: {new Date(task.createdAt).toLocaleString()}
