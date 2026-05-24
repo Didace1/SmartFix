@@ -26,9 +26,7 @@ public class CategoryController {
     @GetMapping
     public List<Map<String, Object>> getAll() {
         return categoryRepository.findAll().stream().map(cat -> {
-            long usageCount = inventoryItemRepository.findAll().stream()
-                    .filter(item -> item.getCategory() != null && cat.getName().equalsIgnoreCase(item.getCategory().getName()))
-                    .count();
+            long usageCount = inventoryItemRepository.countByCategory_Id(cat.getId());
             return Map.<String, Object>of(
                     "id", cat.getId(),
                     "name", cat.getName(),

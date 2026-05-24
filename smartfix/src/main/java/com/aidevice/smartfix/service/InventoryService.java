@@ -40,11 +40,11 @@ public class InventoryService {
     }
 
     public List<InventoryItem> getAll() {
-        return inventoryRepository.findAll();
+        return inventoryRepository.findAllWithCategory();
     }
 
     public Map<String, Object> getAnalytics(int periodDays) {
-        List<InventoryItem> items = inventoryRepository.findAll();
+        List<InventoryItem> items = inventoryRepository.findAllWithCategory();
         LocalDate end = LocalDate.now();
         LocalDate start = end.minusDays(Math.max(1, periodDays) - 1L);
         List<Sale> salesInRange = saleRepository.findByCreatedAtBetween(start.atStartOfDay(), end.plusDays(1).atStartOfDay());
@@ -152,16 +152,20 @@ public class InventoryService {
         System.out.println("Creating inventory item with category: '" + request.category() + "'");
         
         // Validate and ensure category exists
-        Category category = ensureCategoryExists(request.category());
-        System.out.println("Category resolved: " + (category != null ? category.getName() + " (ID: " + category.getId() + ")" : "NULL"));
+        Category resolvedCategory = ensureCategoryExists(request.category());
+        System.out.println("Category resolved: " + (resolvedCategory != null ? resolvedCategory.getName() + " (ID: " + resolvedCategory.getId() + ")" : "NULL"));
         
-        if (category == null) {
-            throw new IllegalArgumentException("Category cannot be null");
+        if (resolvedCategory == null || resolvedCategory.getId() == null) {
+            throw new IllegalArgumentException("Category cannot be null and must have an ID");
         }
+        
+        // Refresh the category to ensure it's attached to the current session
+        final Category category = categoryRepository.findById(resolvedCategory.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Category not found with ID: " + resolvedCategory.getId()));
         
         InventoryItem item = new InventoryItem();
         item.setName(request.name());
-        item.setCategory(category);
+        item.setCategory(category);  // Set the managed category
         item.setQuantity(request.quantity() == null ? 0 : request.quantity());
         item.setReorderPoint(request.reorderPoint() == null ? 10 : request.reorderPoint());
         item.setPrice(request.price());
@@ -191,8 +195,8 @@ public class InventoryService {
         }
         
         // Verify category is set before saving
-        if (item.getCategory() == null) {
-            throw new IllegalStateException("Category must be set before saving inventory item");
+        if (item.getCategory() == null || item.getCategory().getId() == null) {
+            throw new IllegalStateException("Category must be set with valid ID before saving inventory item");
         }
         
         System.out.println("About to save item with category ID: " + item.getCategory().getId());

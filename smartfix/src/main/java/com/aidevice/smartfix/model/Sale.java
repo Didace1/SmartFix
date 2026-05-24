@@ -18,6 +18,20 @@ import java.util.List;
     name = "Sale.items",
     attributeNodes = @NamedAttributeNode("items")
 )
+@NamedEntityGraph(
+    name = "Sale.withDetails",
+    attributeNodes = @NamedAttributeNode(value = "items", subgraph = "sale-items-subgraph"),
+    subgraphs = {
+        @NamedSubgraph(
+            name = "sale-items-subgraph",
+            attributeNodes = @NamedAttributeNode(value = "inventoryItem", subgraph = "inventory-subgraph")
+        ),
+        @NamedSubgraph(
+            name = "inventory-subgraph",
+            attributeNodes = @NamedAttributeNode("category")
+        )
+    }
+)
 public class Sale {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

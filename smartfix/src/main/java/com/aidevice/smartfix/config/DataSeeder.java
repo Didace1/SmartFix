@@ -7,12 +7,14 @@ import com.aidevice.smartfix.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 public class DataSeeder {
 
     @Bean
+    @Order(1)
     CommandLineRunner seedUsers(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,

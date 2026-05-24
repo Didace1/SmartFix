@@ -9,9 +9,9 @@ import java.util.List;
 
 public interface SaleRepository extends JpaRepository<Sale, Long> {
     
-    @EntityGraph(value = "Sale.items", type = EntityGraph.EntityGraphType.LOAD)
+    @EntityGraph(value = "Sale.withDetails", type = EntityGraph.EntityGraphType.LOAD)
     List<Sale> findAll();
     
-    @EntityGraph(value = "Sale.items", type = EntityGraph.EntityGraphType.LOAD)
+    @EntityGraph(value = "Sale.withDetails", type = EntityGraph.EntityGraphType.LOAD)
     List<Sale> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 }

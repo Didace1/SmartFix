@@ -19,7 +19,7 @@ public class InventoryItem {
     @Column(nullable = false)
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
@@ -41,6 +41,9 @@ public class InventoryItem {
 
     @Column(unique = true)
     private String sku;
+
+    @Column
+    private String serialNumber;
 
     @Column
     private String description;

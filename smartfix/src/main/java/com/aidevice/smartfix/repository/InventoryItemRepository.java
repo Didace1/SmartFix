@@ -25,4 +25,9 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, Lo
     // Low stock items
     @Query("SELECT i FROM InventoryItem i WHERE i.quantity <= i.reorderPoint")
     List<InventoryItem> findLowStockItems();
+
+    @Query("SELECT DISTINCT i FROM InventoryItem i JOIN FETCH i.category")
+    List<InventoryItem> findAllWithCategory();
+
+    long countByCategory_Id(Long categoryId);
 }
